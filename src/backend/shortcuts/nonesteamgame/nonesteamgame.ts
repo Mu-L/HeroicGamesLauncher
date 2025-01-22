@@ -145,6 +145,17 @@ function hasParameterCaseInsensitive(object: ShortcutEntry, key: string) {
   return Object.keys(object).some((k) => k.toLowerCase() === keyAsLowercase)
 }
 
+/** Return AppName property case insensitive
+ *  @param {Object} object
+ *  @returns Title of Shortcut Entry
+ */
+function getAppName(object: ShortcutEntry) {
+  const foundkey =
+    Object.keys(object).find((key) => key.toLowerCase() === 'appname') ??
+    'AppName'
+  return object[foundkey]
+}
+
 /**
  * Check if the parsed object of a shortcuts.vdf is valid.
  * @param object @see Partial<ShortcutObject>
@@ -184,7 +195,7 @@ function checkIfShortcutObjectIsValid(
  */
 function checkIfAlreadyAdded(object: Partial<ShortcutObject>, title: string) {
   const shortcuts = object.shortcuts ?? []
-  return shortcuts.findIndex((entry) => entry.AppName === title)
+  return shortcuts.findIndex((entry) => getAppName(entry) === title)
 }
 
 /**
@@ -260,7 +271,7 @@ async function addNonSteamGame(props: {
     } else if (!isWindows && process.env.APPIMAGE) {
       newEntry.Exe = `"${process.env.APPIMAGE}"`
     } else if (isWindows && process.env.PORTABLE_EXECUTABLE_FILE) {
-      newEntry.Exe = `"${process.env.PORTABLE_EXECUTABLE_FILE}`
+      newEntry.Exe = `"${process.env.PORTABLE_EXECUTABLE_FILE}"`
       newEntry.StartDir = `"${process.env.PORTABLE_EXECUTABLE_DIR}"`
     }
 
@@ -293,7 +304,7 @@ async function addNonSteamGame(props: {
 
     const { runner, app_name } = props.gameInfo
 
-    args.push(`"heroic://launch/${runner}/${app_name}"`)
+    args.push(`"heroic://launch?appName=${app_name}&runner=${runner}"`)
     newEntry.LaunchOptions = args.join(' ')
     if (isFlatpak) {
       newEntry.LaunchOptions = `run com.heroicgameslauncher.hgl ${newEntry.LaunchOptions}`
@@ -419,7 +430,7 @@ async function removeNonSteamGame(props: {
     const shortcutObj = content.shortcuts.at(index)!
 
     const exe = shortcutObj.Exe
-    const appName = shortcutObj.AppName
+    const appName = getAppName(shortcutObj)
 
     // remove
     content.shortcuts.splice(index, 1)

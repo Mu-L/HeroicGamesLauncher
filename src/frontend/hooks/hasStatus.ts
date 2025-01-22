@@ -16,6 +16,7 @@ export function hasStatus(
 
   const [gameStatus, setGameStatus] = React.useState<{
     status?: Status
+    statusContext?: string
     folder?: string
     label: string
   }>({ label: '' })
@@ -23,13 +24,18 @@ export function hasStatus(
   const {
     thirdPartyManagedApp = undefined,
     is_installed,
-    runner
+    runner,
+    isEAManaged
   } = { ...gameInfo }
 
   React.useEffect(() => {
     const checkGameStatus = async () => {
-      const { status, folder } =
-        libraryStatus.find((game: GameStatus) => game.appName === appName) || {}
+      const {
+        status,
+        folder,
+        context: statusContext
+      } = libraryStatus.find((game: GameStatus) => game.appName === appName) ||
+      {}
 
       if (status && status !== 'done') {
         const label = getStatusLabel({
@@ -37,21 +43,26 @@ export function hasStatus(
           t,
           runner,
           size: gameSize,
+          statusContext,
           percent: progress.percent
         })
-        return setGameStatus({ status, folder, label })
+        return setGameStatus({ status, folder, label, statusContext })
       }
 
-      if (thirdPartyManagedApp === 'Origin') {
+      if (thirdPartyManagedApp && !isEAManaged) {
         const label = getStatusLabel({
           status: 'notSupportedGame',
           t,
           runner
         })
-        return setGameStatus({ status: 'notSupportedGame', label })
+        return setGameStatus({
+          status: 'notSupportedGame',
+          label,
+          statusContext
+        })
       }
 
-      if (is_installed) {
+      if (is_installed && !thirdPartyManagedApp) {
         const gameAvailable = await handleNonAvailableGames(appName, runner)
         if (!gameAvailable) {
           const label = getStatusLabel({
@@ -59,7 +70,7 @@ export function hasStatus(
             t,
             runner
           })
-          return setGameStatus({ status: 'notAvailable', label })
+          return setGameStatus({ status: 'notAvailable', label, statusContext })
         }
         const label = getStatusLabel({
           status: 'installed',
@@ -67,7 +78,7 @@ export function hasStatus(
           runner,
           size: gameSize
         })
-        return setGameStatus({ status: 'installed', label })
+        return setGameStatus({ status: 'installed', label, statusContext })
       }
 
       const label = getStatusLabel({
@@ -75,7 +86,7 @@ export function hasStatus(
         t,
         runner
       })
-      return setGameStatus({ status: 'notInstalled', label })
+      return setGameStatus({ status: 'notInstalled', label, statusContext })
     }
     checkGameStatus()
   }, [

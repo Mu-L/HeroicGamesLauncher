@@ -1,9 +1,17 @@
-import { GOGCloudSavesLocation, GogInstallPlatform } from './types/gog'
-import { LegendaryInstallPlatform, GameMetadataInner } from './types/legendary'
-import { IpcRendererEvent } from 'electron'
+import {
+  GOGCloudSavesLocation,
+  GogInstallInfo,
+  GogInstallPlatform
+} from './types/gog'
+import {
+  LegendaryInstallPlatform,
+  GameMetadataInner,
+  LegendaryInstallInfo
+} from './types/legendary'
+import { TitleBarOverlay } from 'electron'
 import { ChildProcess } from 'child_process'
-import { HowLongToBeatEntry } from 'howlongtobeat'
-import { NileInstallPlatform } from './types/nile'
+import type { HowLongToBeatEntry } from 'backend/wiki_game_info/howlongtobeat/utils'
+import { NileInstallInfo, NileInstallPlatform } from './types/nile'
 
 export type Runner = 'legendary' | 'gog' | 'sideload' | 'nile'
 
@@ -18,13 +26,24 @@ export interface ButtonOptions {
 
 export type LaunchParams = {
   appName: string
-  launchArguments: string
+  launchArguments?: LaunchOption
   runner: Runner
+  skipVersionCheck?: boolean
+  args?: string[]
 }
 
-export interface LaunchOption {
+export type LaunchOption = BaseLaunchOption | DLCLaunchOption
+
+export interface BaseLaunchOption {
+  type?: 'basic'
   name: string
   parameters: string
+}
+
+interface DLCLaunchOption {
+  type: 'dlc'
+  dlcAppName: string
+  dlcTitle: string
 }
 
 interface About {
@@ -43,11 +62,18 @@ export type Release = {
   body?: string
 }
 
+export type ExperimentalFeatures = {
+  enableNewDesign: boolean
+  enableHelp: boolean
+  cometSupport: boolean
+}
+
 export interface AppSettings extends GameSettings {
   addDesktopShortcuts: boolean
   addStartMenuShortcuts: boolean
   addSteamShortcuts: boolean
   altGogdlBin: string
+  altCometBin: string
   altLegendaryBin: string
   altNileBin: string
   autoUpdateGames: boolean
@@ -60,19 +86,23 @@ export interface AppSettings extends GameSettings {
   defaultSteamPath: string
   defaultWinePrefix: string
   disableController: boolean
+  disablePlaytimeSync: boolean
   disableLogs: boolean
   discordRPC: boolean
   downloadNoHttps: boolean
   egsLinkedPath: string
   enableUpdates: boolean
   exitToTray: boolean
+  experimentalFeatures?: ExperimentalFeatures
+  framelessWindow: boolean
   hideChangelogsOnStartup: boolean
   libraryTopSection: LibraryTopSectionOptions
   maxRecentGames: number
   maxWorkers: number
   minimizeOnLaunch: boolean
   startInTray: boolean
-  userInfo: UserInfo
+  allowInstallationBrokenAnticheat: boolean
+  disableUMU: boolean
 }
 
 export type LibraryTopSectionOptions =
@@ -92,7 +122,10 @@ export type ExecResult = {
 export interface ExtraInfo {
   about?: About
   reqs: Reqs[]
+  releaseDate?: string
   storeUrl?: string
+  changelog?: string
+  genres?: string[]
 }
 
 export type GameConfigVersion = 'auto' | 'v0' | 'v0.1'
@@ -103,6 +136,8 @@ export interface GameInfo {
   app_name: string
   art_cover: string
   art_logo?: string
+  art_background?: string
+  art_icon?: string
   art_square: string
   cloud_save_enabled?: boolean
   developer?: string
@@ -119,7 +154,8 @@ export interface GameInfo {
   gog_save_location?: GOGCloudSavesLocation[]
   title: string
   canRunOffline: boolean
-  thirdPartyManagedApp?: string | undefined
+  thirdPartyManagedApp?: string
+  isEAManaged?: boolean
   is_mac_native?: boolean
   is_linux_native?: boolean
   browserUrl?: string
@@ -127,11 +163,14 @@ export interface GameInfo {
   //used for store release versions. if remote !== local, then update
   version?: string
   dlcList?: GameMetadataInner[]
+  customUserAgent?: string
+  launchFullScreen?: boolean
 }
 
 export interface GameSettings {
   autoInstallDxvk: boolean
   autoInstallVkd3d: boolean
+  autoInstallDxvkNvapi: boolean
   autoSyncSaves: boolean
   battlEyeRuntime: boolean
   DXVKFpsCap: string //Entered as string but used as number
@@ -139,7 +178,9 @@ export interface GameSettings {
   enableDXVKFpsLimit: boolean
   enableEsync: boolean
   enableFSR: boolean
+  enableMsync: boolean
   enableFsync: boolean
+  gamescope: GameScopeSettings
   enviromentOptions: EnviromentVariable[]
   ignoreGameUpdates: boolean
   language: string
@@ -160,6 +201,9 @@ export interface GameSettings {
   wrapperOptions: WrapperVariable[]
   savesPath: string
   gogSaves?: GOGCloudSavesLocation[]
+  beforeLaunchScriptPath: string
+  afterLaunchScriptPath: string
+  disableUMU: boolean
 }
 
 export type Status =
@@ -179,13 +223,15 @@ export type Status =
   | 'notSupportedGame'
   | 'notInstalled'
   | 'installed'
-  | 'ubisoft'
+  | 'redist'
   | 'extracting'
+  | 'winetricks'
 
 export interface GameStatus {
   appName: string
   progress?: InstallProgress
   folder?: string
+  context?: string // Additional context e.g current step
   runner?: Runner
   status: Status
 }
@@ -208,10 +254,19 @@ export interface InstalledInfo {
   version: string
   platform: InstallPlatform
   appName?: string
-  installedWithDLCs?: boolean // For verifing GOG games
-  language?: string // For verifing GOG games
+  installedWithDLCs?: boolean // OLD DLC boolean (all dlcs installed)
+  installedDLCs?: string[] // New installed GOG DLCs array
+  language?: string // For GOG games
   versionEtag?: string // Checksum for checking GOG updates
-  buildId?: string // For verifing GOG games
+  buildId?: string // For verifing and version pinning of GOG games
+  branch?: string // GOG beta channels
+  // Whether to skip update check for this title (currently only used for GOG as it is the only platform actively supporting version rollback)
+  pinnedVersion?: boolean
+  cyberpunk?: {
+    // Cyberpunk compatibility options
+    modsEnabled: boolean
+    modsToLoad: string[] // If this is empty redmod will load mods in alphabetic order
+  }
 }
 
 export interface Reqs {
@@ -239,9 +294,12 @@ export interface WineInstallation {
 export interface InstallArgs {
   path: string
   platformToInstall: InstallPlatform
-  installDlcs?: Array<string> | boolean
+  installDlcs?: Array<string>
   sdlList?: string[]
   installLanguage?: string
+  branch?: string
+  build?: string
+  dependencies?: string[]
 }
 
 export interface InstallParams extends InstallArgs {
@@ -253,8 +311,12 @@ export interface InstallParams extends InstallArgs {
 
 export interface UpdateParams {
   appName: string
-  gameInfo: GameInfo
   runner: Runner
+  gameInfo: GameInfo
+  installDlcs?: Array<string>
+  installLanguage?: string
+  build?: string
+  branch?: string
 }
 
 export interface GOGLoginData {
@@ -283,7 +345,7 @@ export interface GOGImportData {
   installedLanguage: string
   platform: GogInstallPlatform
   versionName: string
-  installedWithDlcs: boolean
+  dlcs: string[]
 }
 
 export type GamepadInputEvent =
@@ -322,6 +384,7 @@ export interface LaunchPreperationResult {
   rpcClient?: RpcClient
   mangoHudCommand?: string[]
   gameModeBin?: string
+  gameScopeCommand?: string[]
   steamRuntime?: string[]
   offlineMode?: boolean
 }
@@ -336,9 +399,11 @@ export interface CallRunnerOptions {
   logMessagePrefix?: string
   logFile?: string
   verboseLogFile?: string
+  logSanitizer?: (line: string) => string
   env?: Record<string, string> | NodeJS.ProcessEnv
   wrappers?: string[]
   onOutput?: (output: string, child: ChildProcess) => void
+  abortId?: string
 }
 
 export interface EnviromentVariable {
@@ -349,6 +414,11 @@ export interface EnviromentVariable {
 export interface WrapperVariable {
   exe: string
   args: string
+}
+
+export interface WrapperEnv {
+  appName: string
+  appRunner: Runner
 }
 
 type AntiCheat =
@@ -407,7 +477,7 @@ export interface Runtime {
   url: string
 }
 
-export type RuntimeName = 'eac_runtime' | 'battleye_runtime'
+export type RuntimeName = 'eac_runtime' | 'battleye_runtime' | 'umu'
 
 export type RecentGame = {
   appName: string
@@ -475,31 +545,11 @@ interface GamepadActionArgsWithoutMetadata {
   metadata?: undefined
 }
 
-type ElWebview = {
-  canGoBack: () => boolean
-  canGoForward: () => boolean
-  goBack: () => void
-  goForward: () => void
-  reload: () => void
-  isLoading: () => boolean
-  getURL: () => string
-  copy: () => string
-  selectAll: () => void
-  findInPage: (text: string | RegExp) => void
-}
-
-export type WebviewType = HTMLWebViewElement & ElWebview
-
 export type InstallPlatform =
   | LegendaryInstallPlatform
   | GogInstallPlatform
   | NileInstallPlatform
   | 'Browser'
-
-export type ConnectivityChangedCallback = (
-  event: IpcRendererEvent,
-  status: ConnectivityStatus
-) => void
 
 export type ConnectivityStatus = 'offline' | 'check-online' | 'online'
 
@@ -538,6 +588,7 @@ export type WineCommandArgs = {
   options?: CallRunnerOptions
   startFolder?: string
   skipPrefixCheckIKnowWhatImDoing?: boolean
+  ignoreLogging?: boolean
 }
 
 export interface SaveSyncArgs {
@@ -571,6 +622,7 @@ export interface DiskSpaceData {
   diskSize: number
   message: string
   validPath: boolean
+  validFlatpakPath: boolean
 }
 
 export interface ToolArgs {
@@ -591,6 +643,8 @@ export interface PCGamingWikiInfo {
   opencritic: GameScoreInfo
   igdb: GameScoreInfo
   direct3DVersions: string[]
+  genres: string[]
+  releaseDate: string[]
 }
 
 export interface AppleGamingWikiInfo {
@@ -617,12 +671,12 @@ export interface SteamInfo {
 }
 
 export interface WikiInfo {
-  timestampLastFetch: string
   pcgamingwiki: PCGamingWikiInfo | null
   applegamingwiki: AppleGamingWikiInfo | null
   howlongtobeat: HowLongToBeatEntry | null
   gamesdb: GamesDBInfo | null
   steamInfo: SteamInfo | null
+  umuId: string | null
 }
 
 /**
@@ -630,12 +684,13 @@ export interface WikiInfo {
  */
 export type Type =
   | 'Wine-GE'
-  | 'Proton-GE'
+  | 'GE-Proton'
   | 'Proton'
   | 'Wine-Lutris'
   | 'Wine-Kron4ek'
   | 'Wine-Crossover'
   | 'Wine-Staging-macOS'
+  | 'Game-Porting-Toolkit'
 
 /**
  * Interface contains information about a version
@@ -665,22 +720,13 @@ export enum Repositorys {
   PROTON,
   WINELUTRIS,
   WINECROSSOVER,
-  WINESTAGINGMACOS
+  WINESTAGINGMACOS,
+  GPTK
 }
 
-/**
- * Type for the progress callback state
- */
-export type State = 'downloading' | 'unzipping' | 'idle'
-
-/**
- * Interface for the information that progress callback returns
- */
-export interface ProgressInfo {
-  percentage: number
-  avgSpeed: number
-  eta: number
-}
+export type WineManagerStatus =
+  | { status: 'idle' | 'unzipping' }
+  | { status: 'downloading'; percentage: number; avgSpeed: number; eta: string }
 
 export interface WineManagerUISettings {
   value: string
@@ -689,3 +735,53 @@ export interface WineManagerUISettings {
 }
 
 export type DownloadManagerState = 'idle' | 'running' | 'paused' | 'stopped'
+
+export interface WindowProps extends Electron.Rectangle {
+  maximized: boolean
+  frame?: boolean
+  titleBarStyle?: 'default' | 'hidden' | 'hiddenInset'
+  titleBarOverlay?: TitleBarOverlay | boolean
+}
+
+interface GameScopeSettings {
+  enableUpscaling: boolean
+  enableLimiter: boolean
+  windowType: string
+  gameWidth: string
+  gameHeight: string
+  upscaleWidth: string
+  upscaleHeight: string
+  upscaleMethod: string
+  fpsLimiter: string
+  fpsLimiterNoFocus: string
+  additionalOptions: string
+}
+
+export type InstallInfo =
+  | LegendaryInstallInfo
+  | GogInstallInfo
+  | NileInstallInfo
+
+export interface KnowFixesInfo {
+  title: string
+  notes?: Record<string, string>
+  winetricks?: string[]
+  runInPrefix?: string[]
+  envVariables?: Record<string, string>
+}
+
+export interface UploadedLogData {
+  // Descriptive name of the log file (e.g. "Game log of ...")
+  name: string
+  // Token to modify the file (used to delete the log file on the server)
+  token: string
+  // Time the log file was uploaded (used to know whether it expired)
+  uploadedAt: number
+}
+
+export interface RunnerCommandStub {
+  commandParts: string[]
+  response?: Promise<ExecResult>
+  stdout?: string
+  stderr?: string
+}

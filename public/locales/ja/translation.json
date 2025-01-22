@@ -1,11 +1,13 @@
 {
     "accessibility": {
-        "actions_font_family_no_default": "アクションに使用するフォントファミリー (デフォルト: ",
+        "actions_font_family_no_default": "アクションに使用するフォントファミリー (デフォルト:",
         "all_tiles_in_color": "すべてのゲームタイルをカラーで表示",
         "content_font_family_no_default": "コンテンツに使用するフォントファミリー (デフォルト: ",
         "fonts": "フォント",
         "title": "アクセシビリティ",
-        "zoom": "拡大/縮小"
+        "zoom": "拡大/縮小",
+        "disable_dialog_backdrop_close": "枠外をクリックしてもダイアログを閉じないようにする",
+        "titles_always_visible": "ライブラリのタイトルを常に表示"
     },
     "add_game": "ゲームを追加",
     "All": "すべて",
@@ -15,7 +17,8 @@
         "reference": "参照",
         "source": "ソース",
         "status": "状態",
-        "title": "このゲームにはアンチチートソフトウェアが含まれています"
+        "title": "このゲームにはアンチチートソフトウェアが含まれています",
+        "multiplayer_may_not_work": "マルチプレイ機能は、アンチチートのサポートが拒否されているか壊れているため、動作しない場合があります。"
     },
     "box": {
         "cache-cleared": {
@@ -115,11 +118,12 @@
             }
         },
         "runexe": {
-            "title": "実行するEXEを選択"
+            "title": "実行するEXEを選択してください"
         },
         "select": {
             "button": "選択",
-            "exe": "EXEを選択"
+            "exe": "EXEを選択",
+            "script": "スクリプト選択..."
         },
         "shortcuts": {
             "message": "デスクトップとスタートメニューにショートカットが作成されました",
@@ -152,12 +156,26 @@
             "wine-change": {
                 "message": "このタイトル（{{selectedWine}}）を起動するために選択されたWineバージョンが見つかりませんでした。{{newline}}代わりに、見つかった{{foundWine}}を使用して起動を続けますか?",
                 "title": "Wineが見つかりません!"
+            },
+            "sideload": {
+                "confirmExit": {
+                    "title": "終了してもよろしいですか?",
+                    "message": "保存されていない進行状況が失われる可能性があります"
+                }
+            },
+            "snap": {
+                "checkbox": "このメッセージを二度と表示しない",
+                "title": "Heroicはスナップとして実行されます",
+                "message": "一部の機能は現在Snapバージョンのアプリで利用できません。 {{newLine}}現在の制限事項：{{newLine}}HeroicはSteamのProtonやLutrisのWineを見つけることができません。{{newLine}}{{newLine}}Gamescope、GameMode、MangoHudもアクセス権限がないため正常に動作しません。 {{newLine}}{{newLine}}この機能にアクセスするには、HeroicをFlakpak、DEBフォーマットパッケージ、またはAppImageからインストールしてください。"
             }
         },
         "wineprefix": "Wine環境フォルダを選択",
         "yes": "はい",
         "dontShowAgain": "次回から確認しない",
-        "choose-nile-binary": "ナイル川バイナリを選択"
+        "choose-nile-binary": "Nileバイナリを選択",
+        "update": "Update",
+        "postpone": "延期",
+        "changelog": "変更履歴"
     },
     "button": {
         "cancel": "キャンセル",
@@ -218,7 +236,8 @@
     "game": {
         "status": "状態",
         "store": "ストア",
-        "title": "ゲームタイトル"
+        "title": "ゲームタイトル",
+        "modify": "インストールの変更"
     },
     "generic": {
         "error": {
@@ -237,9 +256,20 @@
         "platform": "プラットホーム",
         "show_all_games": "すべてのゲームを表示",
         "show_available_games": "利用できないゲームを表示する",
-        "show_favourites_only": "お気に入りのみ表示",
-        "show_hidden": "非表示を表示",
-        "store": "ストアフィルタ"
+        "show_favourites_only": "お気に入りのみ表示する",
+        "show_hidden": "非表示のゲームを表示",
+        "store": "ストアフィルタ",
+        "filters": "フィルター",
+        "all_categories": "すべてのカテゴリー",
+        "show_installed_only": "インストール済みのゲームのみ表示する",
+        "uncategorized": "未分類",
+        "categories": "カテゴリー",
+        "select_all": "すべて選択",
+        "reset": "リセット",
+        "only": "単独表示",
+        "no_categories": "カスタムカテゴリーがありません。各ゲームメニューからカテゴリーを追加してください。",
+        "show_support_offline_only": "オフライン対応のゲームのみ表示する",
+        "show_third_party_managed_only": "サードパーティで管理しているゲームのみ表示"
     },
     "help": {
         "amdfsr": "AMDのFSRは、フルスクリーンモードで低い解像度をアップスケーリングすることでフレームレートを向上させます。パフォーマンスに若干の影響を及ぼしますが、画質は5から1に向上します。有効にするとパフォーマンスが向上する可能性があります。",
@@ -275,12 +305,48 @@
             "part3": "手動同期: クラウドに保存されているゲームのセーブデータをダウンロードするには、“ダウンロード”を選択します。ローカルのセーブデータをクラウドにアップロードするには“ダウンロード”を選択します。“強制ダウンロード”と“強制アップロード”では、ローカルまたはクラウド上のバージョンは無視されます。",
             "part4": "セーブデータを自動的に同期すると、ゲームを開始するたび、およびプレイ終了後にセーブデータが同期されます。"
         },
-        "vkd3d": "VKD3Dは、DirectX 12ゲーム用のVulkanベースの翻訳レイヤです。有効にすると、互換性が大幅に向上する可能性があります。古いDirectXゲームには影響しません。",
+        "vkd3d": "VKD3Dは、DirectX 12ゲーム用のVulkanベースの翻訳レイヤーです。有効にすると、互換性が大幅に向上する可能性があります。古いDirectXゲームには効果がなく、DXVKが必要です。",
         "wine": {
             "part1": "Heroicは、次のフォルダでWine、Proton、CrossOverのバージョンを検索します:",
             "part2": "その他の場所については、これらのフォルダのいずれかへのシンボリックリンクを使用してください"
         },
-        "disable_logs": "このチェックボックスをオンに切り替えると、ログ ファイルへのほとんどの書き込みが無効になります (重要な情報は常にログに記録されます)。問題を報告する前に、必ずこの設定をオフにしてください。"
+        "disable_logs": "このチェックボックスをオンに切り替えると、ログ ファイルへのほとんどの書き込みが無効になります (重要な情報は常にログに記録されます)。問題を報告する前に、必ずこの設定をオフにしてください。",
+        "gamescope": {
+            "fpsLimiterNoFocus": "ゲームが非アクティブの場合、Gamescopeが制限すべき1秒あたりのフレームレート。",
+            "upscaleMethod": "Gamescopeが使用すべきアップスケーリング方法。",
+            "gameWidth": "ゲームで使用される横解像度。Gamescopeでは16:9のアスペクト比を想定しています。",
+            "upscaleWidth": "Gamescopeで使用される横解像度。16:9のアスペクト比を想定しています。",
+            "gameHeight": "ゲームで使用される縦解像度。Gamescopeでは16:9のアスペクト比を想定しています。",
+            "upscaleHeight": "Gamescopeで使用される縦解像度。16:9のアスペクト比を想定しています。",
+            "fpsLimiter": "Gamescopeが制限するフレーム数（例:60）",
+            "additionalOptions": "gamescopeに渡す追加のコマンドラインフラグ。"
+        },
+        "dxvknvapi": "DXVK-NVAPIは、DXVKとLinuxネイティブNVAPIの上に構築されたNVAPIの実装で、Nvidia GPU上でDLSSを使用することができます。",
+        "disablePlaytimeSync": "指定したストアのサーバーとのプレイタイムの同期を無効にする（現時点ではGOGのみ対応）",
+        "title": {
+            "accessibility": "アクセシビリティ",
+            "login": "ログイン",
+            "settings": "設定",
+            "downloadManager": "ダウンロードマネージャー",
+            "wineManager": "Wineマネージャー",
+            "library": "ライブラリ"
+        },
+        "button": {
+            "open": "ヘルプを開く",
+            "close": "ヘルプを閉じる"
+        },
+        "content": {
+            "downloadManager": "現在および過去のダウンロードを表示します。",
+            "library": "所有しているすべてのゲームを表示します。",
+            "settingsDefault": "Heroicのすべての設定とゲームのデフォルト設定を表示します。",
+            "accessibility": "アクセシビリティの設定を表示します。",
+            "customThemesPath": "Wikiをご覧ください。",
+            "defaultInstallPath": "これは、ゲームのインストール時にあらかじめ選択されているデフォルトのパスです。",
+            "settingsGame": "ゲームのすべての設定を表示します。",
+            "login": "それぞれのストアにログインします。",
+            "wineManager": "各バージョンのWine、Proton、Crossoverなどをインストールします。"
+        },
+        "msync": "Fsync aims to reduce wineserver overhead in CPU-intensive games. Enabling may improve performance on supported Linux kernels."
     },
     "info": {
         "heroic": {
@@ -314,7 +380,8 @@
         "path": "Select Install Path"
     },
     "label": {
-        "loading": "読み込み中"
+        "loading": "読み込み中",
+        "releaseDate": "Release Date"
     },
     "library": {
         "refresh": "更新",
@@ -336,7 +403,8 @@
         "epic": "Epic Gamesログイン",
         "gog": "GOGログイン",
         "message": "お使いのプラットフォームにログインします。同時に複数のプラットフォームにログインすることができます。",
-        "amazon": "アマゾンログイン"
+        "amazon": "Amazonログイン",
+        "old-mac": "このmacOSのバージョンは {{version}} です。 ログインするにはmacOS 12以降が必要です。"
     },
     "message": {
         "sync": "同期を完了しました",
@@ -415,7 +483,11 @@
         },
         "gameargs": {
             "placeholder": "ここにランチャーの引数を入力してください",
-            "title": "ゲームの引数（コマンドの後に実行）:"
+            "title": "ゲームの引数（コマンドの後に実行）:",
+            "error": {
+                "command": "Steamの %command% 構文は有効なゲーム引数ではありません。",
+                "env": "環境変数は、以下の表で設定する必要があります。"
+            }
         },
         "quote-args-with-spaces": "警告: 空白文字を含む引数は必ず引用符で囲ってください! 例: \"path/with spaces/\"",
         "wrapper": {
@@ -425,13 +497,28 @@
             "placeHolderKey": "新しいラッパー",
             "placeHolderValue": "ラッパー引数",
             "title": "ラッパーコマンド:"
+        },
+        "gamescope": {
+            "nis": "NVIDIA Image Scaling (NIS)",
+            "borderless": "ボーダーレス",
+            "fpsLimiter": "FPSリミッター",
+            "gameHeight": "縦解像度",
+            "upscaleWidth": "横解像度のアップスケール",
+            "fullscreen": "フルスクリーン",
+            "gameWidth": "横解像度",
+            "interger": "整数アップスケール",
+            "upscaleHeight": "縦解像度のアップスケール",
+            "fpsLimiterNoFocus": "FPSリミッター（非アクティブ）",
+            "stretch": "引き伸ばし",
+            "windowed": "ウィンドウ",
+            "additionalOptions": "追加オプション"
         }
     },
     "other": {
         "gogdl-version": "GOGDLバージョン: ",
         "legendary-version": "Legendaryバージョン: ",
         "weblate": "Heroicの翻訳に協力",
-        "nile-version": "ナイルバージョン: "
+        "nile-version": "Nileバージョン: "
     },
     "Other": "その他",
     "placeholder": {
@@ -441,7 +528,7 @@
         "dxvkfpsvalue": "正の整数値（例: 30、60、…）",
         "egs-prefix": "EGSがインストールされている環境",
         "prefered_language": "2文字のコード（“en”や“fr”など）",
-        "alt-nile-bin": "組み込みの Nile バイナリを使用しています..."
+        "alt-nile-bin": "組み込みのNileバイナリを使用しています..."
     },
     "platforms": {
         "linux": "Linux",
@@ -527,11 +614,15 @@
         "log": {
             "copy-to-clipboard": "ログの内容をクリップボードにコピー",
             "current-log": "現在のログ",
-            "instructions": "Discordに参加し、お使いのオペレーティングシステムに一致するチャンネルを探してください。ここに表示されるログの内容を共有し、問題の明確な説明と関連情報および詳細を含めてください。",
+            "instructions": "Discordに参加し、\"#-support \"セクションを探してください。ピン留めされている \"Read Me First | Frequently Asked Questions \"スレッドを読み、指示に従ってこれらのログと問題についての関連情報を共有してください。",
             "instructions_title": "問題を報告する方法",
             "last-log": "最後のログ",
             "no-file": "ログファイルが見つかりません",
-            "show-in-folder": "ログファイルをフォルダに表示"
+            "show-in-folder": "ログファイルをフォルダに表示",
+            "join-heroic-discord": "Discordに参加する",
+            "upload": {
+                "actions": "操作"
+            }
         },
         "mangohud": "Mangohudを有効にする（Mangohudがインストールされている必要があります）",
         "manualsync": {
@@ -577,7 +668,39 @@
         "disable_logs": "ログを無効にする",
         "addgamestoapplications": "ゲームをアプリケーションに自動的に追加する",
         "showMetalOverlay": "統計オーバーレイを表示",
-        "alt-nile-bin": "代替の Nile バイナリを選択する"
+        "alt-nile-bin": "代替のNileバイナリを選択する",
+        "autodxvknvapi": "プレフィックスでのDXVK-NVAPIの自動インストール/更新",
+        "frameless-window": {
+            "confirmation": {
+                "message": "この機能はまだ実験的なものです。問題があればGitHubで報告してください。",
+                "title": "実験的機能"
+            },
+            "description": "フレームレスウィンドウを使用（再起動後に適用）"
+        },
+        "gamescope": {
+            "enableLimiter": "FPSリミッターを有効",
+            "enableUpscaling": "アップスケーリングを有効",
+            "missingMsg": "PATHにGamescopeが見つかりません。インストールするか、PATHに追加してください。"
+        },
+        "disablePlaytimeSync": "プレイ時間の同期を無効",
+        "experimental_features": {
+            "enableNewDesign": "新デザイン",
+            "enableHelp": "ヘルプコンポーネント",
+            "automaticWinetricksFixes": "既存の修正を自動的に適用",
+            "cometSupport": "Cometサポート",
+            "umuSupport": "umuをProtonのランタイムとして使用"
+        },
+        "msync": "Esyncを有効にする",
+        "allow_installation_broken_anticheat": {
+            "confirmation": {
+                "message": "アンチチートが壊れているか拒否されています。ゲームが動作する可能性はありますが、マルチプレイ機能は動作しません。 このことを理解してインストールした場合はサポートを求めないでください。",
+                "title": "本当によろしいですか？",
+                "understand": "理解しました"
+            },
+            "label": "アンチチートが壊れていたり、拒否されているゲームのインストールを許可"
+        },
+        "before-launch-script-path": "ゲーム起動前に実行するスクリプトを選択",
+        "after-launch-script-path": "ゲーム終了後に実行するスクリプトを選択"
     },
     "settings": {
         "battlEyeRuntime": {
@@ -612,13 +735,69 @@
             "log": "ログ",
             "other": "その他",
             "sync": "クラウドセーブ同期",
-            "wineExt": "Wine Extensions"
+            "wineExt": "Wine Extensions",
+            "gamescope": "Gamescope",
+            "systemInformation": "システム情報"
         },
         "open-config-file": "構成ファイルを開く",
         "reset-heroic": "Heroicをリセット",
         "saves": {
             "label": "Save Location:",
             "warning": "クラウドセーブ機能は実験的な機能です。同期する前にセーブデータをバックアップしてください（何か問題が発生した場合に備えて）"
+        },
+        "systemInformation": {
+            "cpu": "CPU:",
+            "gpuWithNumber": "GPU {{number}}:",
+            "cpuDescription": "{{numOfCores}}x {{modelName}}",
+            "legendaryVersion": "Legendary: {{legendaryVersion}}",
+            "systemSpecifications": "システム仕様:",
+            "steamDeck": "Steam Deck {{model}}",
+            "gpuDriver": "ドライバー: {{driverVersion}}",
+            "os": "オペレーティングシステム:",
+            "gpu": "GPU:",
+            "gogdlVersion": "Gogdl: {{gogdlVersion}}",
+            "osVersion": "バージョン {{versionNumber}}",
+            "osNameFlatpak": "{{osName}} （Flatpak内）",
+            "software": "ソフトウェア:",
+            "memoryStats": "{{percentUsed}}% 使用中 ({{usedGib}} / {{totalGib}}",
+            "systemModel": "システムモデル:",
+            "showDetailed": "詳細なシステム仕様を表示",
+            "memory": "メモリー:",
+            "copyToClipboard": "クリップボードにコピー",
+            "heroicVersion": "Heroic: {{heroicVersion}}",
+            "nileVersion": "Nile: {{nileVersion}}",
+            "cometVersion": "Comet: {{cometVersion}}"
+        },
+        "experimental_features": {
+            "title": "実験的機能"
+        },
+        "gamescope": {
+            "searchMsg": "Gamescope実行ファイルを検索しています。"
+        },
+        "offline": {
+            "warning": "このゲームは明確にオフラインモードを許可していません。ゲームが動作しない場合があります。"
+        },
+        "advanced": {
+            "details": "詳細",
+            "title": {
+                "resetHeroic": "Reset Heroic",
+                "clearCache": "キャッシュクリア"
+            },
+            "clearCache": {
+                "help8": "Installed Games",
+                "help9": "ゲーム設定",
+                "help1": "このアクションは以下のキャッシュをクリアします:",
+                "help10": "Heroic 設定",
+                "help2": "サードパーティのゲーム情報 (scores, steam compatibility, howlongtobeat, pcgamingwiki, applegamingwiki)",
+                "help3": "Legendaryライブラリ情報 (ゲームリスト、インストールダイアログ情報、ゲーム情報)",
+                "help4": "GOGライブラリ情報 (ゲームリスト、インストールダイアログ情報、api 情報 - 要件など)",
+                "help5": "Amazonライブラリ情報 (ゲームのリスト、インストールダイアログ情報)",
+                "help6": "以下は削除されません:",
+                "help7": "ログイン情報の保存"
+            },
+            "resetHeroic": {
+                "help": "これにより、すべての設定とキャッシュが削除されますが、インストール済みのゲームやEpicの認証情報は削除されません。また、Heroicのポータブル版（AppImage、WinPortable、...）を手動で再起動する必要があります。"
+            }
         }
     },
     "Settings": "設定",
@@ -678,9 +857,9 @@
     "wine": {
         "actions": "アクション",
         "manager": {
-            "link": "Wineマネージャ",
+            "link": "Wineマネージャー",
             "not-found": "Wineバージョンが見つかりません。再試行するには、更新アイコンをクリックしてください。",
-            "title": "Wineマネージャ",
+            "title": "Wineマネージャー",
             "unzipping": "展開中"
         },
         "release": "リリース日",
@@ -688,19 +867,67 @@
     },
     "externalLink": {
         "dontAskAgain": "次回から確認しない",
-        "warning": "外部リンクを開こうとしています。"
+        "warning": "外部のリンクを開こうとしています。"
     },
     "wiki_info": {
         "not_found": "追加情報は見つかりませんでした。"
     },
     "dlc": {
-        "title": "Title",
-        "actions": "行動",
+        "title": "タイトル",
+        "actions": "操作",
         "installDlcs": "すべてのDLCをインストールします",
         "noDlcFound": "DLCが見つかりませんでした",
-        "size": "Size"
+        "size": "サイズ"
     },
-    "Amazon Games": "アマゾンゲーム",
+    "Amazon Games": "Amazon Games",
     "amazon": "アマゾン",
-    "prime-gaming": "プライムゲーミング"
+    "prime-gaming": "omPrime Gaming",
+    "winetricks": {
+        "install": "インストール",
+        "loading": "読み込み中",
+        "installing": "インストール中: {{component}}",
+        "openGUI": "WinetricksのGUIを開く",
+        "search": "フォントまたはコンポーネントの検索",
+        "nothingYet": "Winetricksではまだ何もインストールされていません",
+        "installed": "インストール済みのコンポーネント:"
+    },
+    "category-settings": {
+        "cancel": "キャンセル",
+        "warning": "警告",
+        "remove-category": "カテゴリーを削除",
+        "delete-question": "続行すると、このカテゴリーは永久に削除され、すべてのゲームの割り当てが解除されます。続行しますか？",
+        "new-category": "新しいカテゴリー",
+        "add-new-category": "新しいカテゴリーを追加"
+    },
+    "window": {
+        "minimize": "ウィンドウの最小化",
+        "maximize": "ウィンドウの最大化",
+        "close": "閉じる",
+        "restore": "ウィンドウの復元"
+    },
+    "wineExplanation": {
+        "proton-ge": "GE-ProtonはGlorious Eggrollによって作成されたProtonの亜種です。Steamで使うことを想定していますが、Steam以外のゲームではこの亜種の方がうまく動くかもしれません。トラブルシューティングのためにほとんど役に立たないログを提供します。",
+        "wine-ge": "Wine-GE-ProtonはGlorious Eggrollによって作成されたWineの亜種です。Steam以外での使用を推奨するWineです。トラブルシューティング時に便利なログを提供します。"
+    },
+    "categories-manager": {
+        "add-placeholder": "新しいカテゴリーを追加",
+        "add": "追加",
+        "cancel-remove": "\"{{name}}\"の削除を取り消す",
+        "no-categories": "まだカテゴリーはありません。",
+        "title": "カテゴリーの管理",
+        "cancel-rename": "\"{{name}}\"の名前変更を取り消す",
+        "confirm-remove": "\"{{name}}\"の削除を確認する",
+        "confirm-rename": "\"{{oldName}}\"から\"{{newName}}\"へ名前変更の確認",
+        "remove": "\"{{name}}\"を削除",
+        "rename": "\"{{name}}\"を名前変更"
+    },
+    "adtraction-locked": {
+        "description": "track.adtraction.comドメインが読み込みできないか、ブロックされているようです。 adtractionでは、GOG ストアで購入するとHeroicに資金援助が行われます。寄付を希望される場合は、ブロックを解除することを検討してください。",
+        "dont-show-again": "この警告を二度と表示しない",
+        "title": "Adtractionがブロックされています"
+    },
+    "emptyLibrary": {
+        "noGames": "ライブラリがありません。 ストアを使用して<1>ログイン</1>するか、<3></3>をクリックして手動で追加してください。",
+        "noResults": "現在のフィルターでは検索結果がありません。"
+    }
 }

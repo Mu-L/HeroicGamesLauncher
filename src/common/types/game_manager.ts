@@ -5,11 +5,10 @@ import {
   GameSettings,
   ExecResult,
   InstallArgs,
-  CallRunnerOptions
+  InstallInfo,
+  LaunchOption
 } from 'common/types'
-import { GOGCloudSavesLocation, GogInstallInfo } from './gog'
-import { LegendaryInstallInfo } from './legendary'
-import { NileInstallInfo } from './nile'
+import { GOGCloudSavesLocation } from './gog'
 
 export interface InstallResult {
   status: 'done' | 'error' | 'abort'
@@ -41,7 +40,12 @@ export interface GameManager {
   isNative: (appName: string) => boolean
   addShortcuts: (appName: string, fromMenu?: boolean) => Promise<void>
   removeShortcuts: (appName: string) => Promise<void>
-  launch: (appName: string, launchArguments?: string) => Promise<boolean>
+  launch: (
+    appName: string,
+    launchArguments?: LaunchOption,
+    args?: string[],
+    skipVersionCheck?: boolean
+  ) => Promise<boolean>
   moveInstall: (
     appName: string,
     newInstallPath: string
@@ -54,10 +58,19 @@ export interface GameManager {
     gogSaves?: GOGCloudSavesLocation[]
   ) => Promise<string>
   uninstall: (args: RemoveArgs) => Promise<ExecResult>
-  update: (appName: string) => Promise<InstallResult>
+  update: (
+    appName: string,
+    updateOverwrites?: {
+      build?: string
+      branch?: string
+      language?: string
+      dlcs?: string[]
+      dependencies?: string[]
+    }
+  ) => Promise<InstallResult>
   forceUninstall: (appName: string) => Promise<void>
   stop: (appName: string, stopWine?: boolean) => Promise<void>
-  isGameAvailable: (appName: string) => boolean
+  isGameAvailable: (appName: string) => Promise<boolean>
 }
 
 export interface LibraryManager {
@@ -66,16 +79,18 @@ export interface LibraryManager {
   getInstallInfo: (
     appName: string,
     installPlatform: InstallPlatform,
-    lang?: string
-  ) => Promise<
-    LegendaryInstallInfo | GogInstallInfo | NileInstallInfo | undefined
-  >
+    options: {
+      branch?: string
+      build?: string
+      lang?: string
+      retries?: number
+    }
+  ) => Promise<InstallInfo | undefined>
   listUpdateableGames: () => Promise<string[]>
   changeGameInstallPath: (appName: string, newPath: string) => Promise<void>
+  changeVersionPinnedStatus: (appName: string, status: boolean) => void
   installState: (appName: string, state: boolean) => void
-  runRunnerCommand: (
-    commandParts: string[],
-    abortController: AbortController,
-    options?: CallRunnerOptions
-  ) => Promise<ExecResult>
+  getLaunchOptions: (
+    appName: string
+  ) => LaunchOption[] | Promise<LaunchOption[]>
 }

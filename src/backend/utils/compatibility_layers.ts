@@ -1,7 +1,9 @@
 import { GlobalConfig } from 'backend/config'
 import {
   configPath,
+  defaultUmuPath,
   getSteamLibraries,
+  isLinux,
   isMac,
   toolsPath,
   userHome
@@ -9,11 +11,15 @@ import {
 import { logError, LogPrefix, logInfo } from 'backend/logger/logger'
 import { execAsync } from 'backend/utils'
 import { execSync } from 'child_process'
-import { WineInstallation } from 'common/types'
+import { GameSettings, WineInstallation } from 'common/types'
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'graceful-fs'
 import { homedir } from 'os'
 import { dirname, join } from 'path'
 import { PlistObject, parse as plistParse } from 'plist'
+import LaunchCommand from '../storeManagers/legendary/commands/launch'
+import { NonEmptyString } from '../storeManagers/legendary/commands/base'
+import { Path } from 'backend/schemas'
+import { searchForExecutableOnPath } from './os/path'
 
 /**
  * Loads the default wine installation path and version.
@@ -163,6 +169,10 @@ export async function getLinuxWineSet(
   protonPaths.forEach((path) => {
     if (existsSync(path)) {
       readdirSync(path).forEach((version) => {
+        // Only relevant to Lutris
+        if (version.startsWith('UMU-Latest')) {
+          return
+        }
         const protonBin = join(path, version, 'proton')
         // check if bin exists to avoid false positives
         if (existsSync(protonBin)) {
@@ -178,7 +188,7 @@ export async function getLinuxWineSet(
   })
 
   const defaultWineSet = new Set<WineInstallation>()
-  const defaultWine = await getDefaultWine()
+  const defaultWine = getDefaultWine()
   if (!defaultWine.name.includes('Not Found')) {
     defaultWineSet.add(defaultWine)
   }
@@ -331,12 +341,62 @@ export async function getCrossover(): Promise<Set<WineInstallation>> {
  * Detects Gaming Porting Toolkit Wine installs on Mac
  * @returns Promise<Set<WineInstallation>>
  **/
-export async function getGamingPortingToolkitWine(): Promise<
+export async function getGamePortingToolkitWine(): Promise<
   Set<WineInstallation>
 > {
-  const gamingPortingToolkitWine = new Set<WineInstallation>()
+  const gamePortingToolkitWine = new Set<WineInstallation>()
   if (!isMac) {
-    return gamingPortingToolkitWine
+    return gamePortingToolkitWine
+  }
+
+  const GPTK_ToolPath = join(toolsPath, 'game-porting-toolkit')
+  const wineGPTKPaths = new Set<string>()
+
+  if (existsSync(GPTK_ToolPath)) {
+    readdirSync(GPTK_ToolPath).forEach((path) => {
+      wineGPTKPaths.add(join(GPTK_ToolPath, path))
+    })
+  }
+
+  wineGPTKPaths.forEach((winePath) => {
+    const infoFilePath = join(winePath, 'Contents/Info.plist')
+    if (existsSync(infoFilePath)) {
+      const wineBin = join(winePath, '/Contents/Resources/wine/bin/wine64')
+      try {
+        const name = winePath.split('/').pop() || ''
+        if (existsSync(wineBin)) {
+          gamePortingToolkitWine.add({
+            ...getWineExecs(wineBin),
+            lib: `${winePath}/Contents/Resources/wine/lib`,
+            lib32: `${winePath}/Contents/Resources/wine/lib`,
+            bin: wineBin,
+            name,
+            type: 'toolkit',
+            ...getWineExecs(wineBin)
+          })
+        }
+      } catch (error) {
+        logError(
+          `Error getting wine version for GPTK ${wineBin}`,
+          LogPrefix.GlobalConfig
+        )
+      }
+    }
+  })
+
+  return gamePortingToolkitWine
+}
+
+/**
+ * Detects Gaming Porting Toolkit Wine installs on Mac
+ * @returns Promise<Set<WineInstallation>>
+ **/
+export async function getSystemGamePortingToolkitWine(): Promise<
+  Set<WineInstallation>
+> {
+  const systemGPTK = new Set<WineInstallation>()
+  if (!isMac) {
+    return systemGPTK
   }
 
   logInfo('Searching for Gaming Porting Toolkit Wine', LogPrefix.GlobalConfig)
@@ -347,18 +407,19 @@ export async function getGamingPortingToolkitWine(): Promise<
 
   if (existsSync(wineBin)) {
     logInfo(
-      `Found Gaming Porting Toolkit Wine at ${dirname(wineBin)}`,
+      `Found Game Porting Toolkit Wine at ${dirname(wineBin)}`,
       LogPrefix.GlobalConfig
     )
     try {
       const { stdout: out } = await execAsync(`'${wineBin}' --version`)
       const version = out.split('\n')[0]
-      gamingPortingToolkitWine.add({
+      const GPTKDIR = join(dirname(wineBin), '..')
+      systemGPTK.add({
         ...getWineExecs(wineBin),
-        name: `GPTK Wine (DX11/DX12 Only) - ${version}`,
+        name: `GPTK System (DX11/DX12 Only) - ${version}`,
         type: 'toolkit',
-        lib: `${dirname(wineBin)}/../lib`,
-        lib32: `${dirname(wineBin)}/../lib`,
+        lib: join(GPTKDIR, 'lib'),
+        lib32: join(GPTKDIR, 'lib'),
         bin: wineBin
       })
     } catch (error) {
@@ -369,21 +430,138 @@ export async function getGamingPortingToolkitWine(): Promise<
     }
   }
 
-  return gamingPortingToolkitWine
+  return systemGPTK
 }
 
-export function getWineFlags(
-  wineBin: string,
-  wineType: WineInstallation['type'],
+/**
+ * Detects Whisky installs on Mac
+ *
+ * @returns Promise<Set<WineInstallation>>
+ */
+export async function getWhisky(): Promise<Set<WineInstallation>> {
+  const whisky = new Set<WineInstallation>()
+
+  if (!isMac) {
+    return whisky
+  }
+
+  const whiskyWinePath = join(
+    userHome,
+    'Library/Application Support/com.isaacmarovitz.Whisky/Libraries'
+  )
+  const whiskyVersionPlist = join(whiskyWinePath, 'WhiskyWineVersion.plist')
+  const whiskyWineBin = join(whiskyWinePath, 'Wine/bin/wine64')
+
+  if (existsSync(whiskyVersionPlist) && existsSync(whiskyWineBin)) {
+    try {
+      const info = plistParse(
+        readFileSync(whiskyVersionPlist, 'utf-8')
+      ) as PlistObject
+      const version = info['version']
+      const versionString = `${version['major']}.${version['minor']}.${version['patch']}-${version['build']}`
+      whisky.add({
+        bin: whiskyWineBin,
+        name: `Whisky - ${versionString}`,
+        type: 'toolkit',
+        lib: join(whiskyWinePath, 'Wine/lib'),
+        lib32: join(whiskyWinePath, 'Wine/lib'),
+        ...getWineExecs(whiskyWineBin)
+      })
+    } catch (error) {
+      logError(
+        `Error getting wine version for ${whiskyWineBin}`,
+        LogPrefix.GlobalConfig
+      )
+    }
+  }
+
+  return whisky
+}
+
+export type AllowedWineFlags = Pick<
+  LaunchCommand,
+  '--wine' | '--wrapper' | '--no-wine'
+>
+
+/**
+ * Returns a LegendaryCommand with the required flags to use a specified Wine version
+ * @param wineBin The full path to the Wine binary (`wine`/`wine64`/`proton`)
+ * @param wineType The type of the Wine version
+ * @param wrapper Any wrappers to be used, may be `''`
+ */
+export async function getWineFlags(
+  gameSettings: GameSettings,
   wrapper: string
-) {
+): Promise<AllowedWineFlags> {
+  let partialCommand: AllowedWineFlags = {}
+  const { type: wineType, bin: wineExec } = gameSettings.wineVersion
+
+  // Fix for people with old config
+  const wineBin =
+    wineExec.startsWith("'") && wineExec.endsWith("'")
+      ? wineExec.replaceAll("'", '')
+      : wineExec
+
   switch (wineType) {
     case 'wine':
     case 'toolkit':
-      return ['--wine', wineBin, ...(wrapper ? ['--wrapper', wrapper] : [])]
+      partialCommand = { '--wine': Path.parse(wineBin) }
+      if (wrapper) partialCommand['--wrapper'] = NonEmptyString.parse(wrapper)
+      break
     case 'proton':
-      return ['--no-wine', '--wrapper', `${wrapper} '${wineBin}' run`]
+      partialCommand = {
+        '--no-wine': true,
+        '--wrapper': NonEmptyString.parse(
+          `${wrapper} "${wineBin}" waitforexitandrun`
+        )
+      }
+      if (await isUmuSupported(gameSettings)) {
+        partialCommand['--wrapper'] = NonEmptyString.parse(
+          (wrapper ? `${wrapper} ` : '') + `"${await getUmuPath()}"`
+        )
+      }
+      break
+    case 'crossover':
+      partialCommand = {
+        '--wine': Path.parse(wineBin)
+      }
+      if (wrapper) partialCommand['--wrapper'] = NonEmptyString.parse(wrapper)
+      break
     default:
-      return []
+      break
   }
+  return partialCommand
+}
+
+/**
+ * Like {@link getWineFlags}, but returns a `string[]` with the flags instead
+ */
+export async function getWineFlagsArray(
+  gameSettings: GameSettings,
+  wrapper: string
+): Promise<string[]> {
+  const partialCommand = await getWineFlags(gameSettings, wrapper)
+
+  const commandArray: string[] = []
+  for (const [key, value] of Object.entries(partialCommand)) {
+    if (value === true) commandArray.push(key)
+    else commandArray.push(key, value)
+  }
+  return commandArray
+}
+
+export const getUmuPath = async () =>
+  searchForExecutableOnPath('umu-run').then((path) => path ?? defaultUmuPath)
+
+export async function isUmuSupported(
+  gameSettings: GameSettings,
+  checkUmuInstalled = true
+): Promise<boolean> {
+  if (!isLinux) return false
+  if (gameSettings.wineVersion.type !== 'proton') return false
+  if (gameSettings.disableUMU) return false
+  if (!checkUmuInstalled) return true
+  if (!existsSync(await getUmuPath())) return false
+
+  return true
 }

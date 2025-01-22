@@ -5,18 +5,16 @@
 
 import { existsSync, mkdirSync, rmSync } from 'graceful-fs'
 import { logError, logInfo, LogPrefix, logWarning } from '../../logger/logger'
-import {
-  WineVersionInfo,
-  ProgressInfo,
-  Repositorys,
-  State,
-  VersionInfo
-} from 'common/types'
+import { WineVersionInfo, Repositorys, WineManagerStatus } from 'common/types'
 
 import { getAvailableVersions, installVersion } from './downloader/main'
 import { toolsPath, isMac } from '../../constants'
 import { sendFrontendMessage } from '../../main_window'
 import { TypeCheckedStoreBackend } from 'backend/electron_store'
+import {
+  createAbortController,
+  deleteAbortController
+} from 'backend/utils/aborthandler/aborthandler'
 
 export const wineDownloaderInfoStore = new TypeCheckedStoreBackend(
   'wineDownloaderInfoStore',
@@ -37,7 +35,11 @@ async function updateWineVersionInfos(
     logInfo('Fetching upstream information...', LogPrefix.WineDownloader)
 
     const repositorys = isMac
-      ? [Repositorys.WINECROSSOVER, Repositorys.WINESTAGINGMACOS]
+      ? [
+          Repositorys.WINECROSSOVER,
+          Repositorys.WINESTAGINGMACOS,
+          Repositorys.GPTK
+        ]
       : [Repositorys.WINEGE, Repositorys.PROTONGE]
 
     await getAvailableVersions({
@@ -50,6 +52,18 @@ async function updateWineVersionInfos(
 
       old_releases.forEach((old) => {
         const index = releases.findIndex((release) => {
+          if (release.type === 'GE-Proton') {
+            // The "Proton" prefix got dropped from the version string. We still
+            // want to detect old versions though
+            if (`Proton-${release.version}` === old.version) return true
+            // -latest is an even more special case, since it got renamed from
+            // "Proton-GE-latest" to "GE-Proton-latest"
+            if (
+              release.version === 'GE-Proton-latest' &&
+              old.version === 'Proton-GE-latest'
+            )
+              return true
+          }
           return release?.version === old?.version
         })
 
@@ -58,7 +72,7 @@ async function updateWineVersionInfos(
             releases[index].installDir = old.installDir
             releases[index].isInstalled = old.isInstalled
             releases[index].disksize = old.disksize
-            if (releases[index].checksum !== old.checksum) {
+            if (releases[index].checksum !== old.checksum || old.hasUpdate) {
               releases[index].hasUpdate = true
             }
           } else {
@@ -83,16 +97,29 @@ async function updateWineVersionInfos(
   return releases
 }
 
+function getInstallDir(release: WineVersionInfo): string {
+  if (release?.type?.includes('Wine')) {
+    return `${toolsPath}/wine`
+  } else if (release.type.includes('Toolkit')) {
+    return `${toolsPath}/game-porting-toolkit`
+  } else {
+    return `${toolsPath}/proton`
+  }
+}
+
 async function installWineVersion(
   release: WineVersionInfo,
-  onProgress: (state: State, progress?: ProgressInfo) => void,
-  abortSignal: AbortSignal
+  onProgress: (status: WineManagerStatus) => void
 ) {
   let updatedInfo: WineVersionInfo
   const variant = release.hasUpdate ? 'update' : 'installation'
 
   if (!existsSync(`${toolsPath}/wine`)) {
     mkdirSync(`${toolsPath}/wine`, { recursive: true })
+  }
+
+  if (isMac && !existsSync(`${toolsPath}/game-porting-toolkit`)) {
+    mkdirSync(`${toolsPath}/game-porting-toolkit`, { recursive: true })
   }
 
   if (!existsSync(`${toolsPath}/proton`)) {
@@ -104,17 +131,17 @@ async function installWineVersion(
     LogPrefix.WineDownloader
   )
 
-  const installDir = release?.type?.includes('Wine')
-    ? `${toolsPath}/wine`
-    : `${toolsPath}/proton`
+  const installDir = getInstallDir(release)
+
+  const abortController = createAbortController(release.version)
 
   try {
     const response = await installVersion({
-      versionInfo: release as VersionInfo,
+      versionInfo: release,
       installDir,
       overwrite: release.hasUpdate,
       onProgress: onProgress,
-      abortSignal: abortSignal
+      abortSignal: abortController.signal
     })
     updatedInfo = {
       ...response.versionInfo,
@@ -124,13 +151,15 @@ async function installWineVersion(
       type: release.type
     }
   } catch (error) {
-    if (abortSignal.aborted) {
+    if (abortController.signal.aborted) {
       logWarning(error, LogPrefix.WineDownloader)
       return 'abort'
     } else {
       logError(error, LogPrefix.WineDownloader)
       return 'error'
     }
+  } finally {
+    deleteAbortController(release.version)
   }
 
   // Update stored information

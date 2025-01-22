@@ -9,6 +9,7 @@ import { getInfoFromAppleGamingWiki } from './applegamingwiki/utils'
 import { getHowLongToBeat } from './howlongtobeat/utils'
 import { getInfoFromPCGamingWiki } from './pcgamingwiki/utils'
 import { isMac, isLinux } from '../constants'
+import { getUmuId } from './umu/utils'
 
 export async function getWikiGameInfo(
   title: string,
@@ -19,40 +20,31 @@ export async function getWikiGameInfo(
     title = removeSpecialcharacters(title)
 
     // check if we have a cached response
-    const cachedResponse = wikiGameInfoStore.get_nodefault(title)
+    const cachedResponse = wikiGameInfoStore.get(title)
     if (cachedResponse) {
       logInfo(
         [`Using cached ExtraGameInfo data for ${title}`],
         LogPrefix.ExtraGameInfo
       )
-
-      const oneMonthAgo = new Date()
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-
-      const timestampLastFetch = new Date(cachedResponse.timestampLastFetch)
-      if (timestampLastFetch > oneMonthAgo) {
-        return cachedResponse
-      }
-
-      logInfo(
-        [`Cached ExtraGameInfo data for ${title} outdated.`],
-        LogPrefix.ExtraGameInfo
-      )
+      return cachedResponse
     }
 
     logInfo(`Getting ExtraGameInfo data for ${title}`, LogPrefix.ExtraGameInfo)
 
-    const [pcgamingwiki, howlongtobeat, gamesdb, applegamingwiki] =
+    const [pcgamingwiki, howlongtobeat, gamesdb, applegamingwiki, umuId] =
       await Promise.all([
         getInfoFromPCGamingWiki(title, runner === 'gog' ? appName : undefined),
         getHowLongToBeat(title),
         getInfoFromGamesDB(title, appName, runner),
-        isMac ? getInfoFromAppleGamingWiki(title) : null
+        isMac ? getInfoFromAppleGamingWiki(title) : null,
+        isLinux ? getUmuId(appName, runner) : null
       ])
 
     let steamInfo = null
     if (isLinux) {
-      const steamID = pcgamingwiki?.steamID || gamesdb?.steamID
+      // gamesdb is more accurate since we always query by appName
+      // pcgamingwiki is queried by title in most cases
+      const steamID = gamesdb?.steamID || pcgamingwiki?.steamID
       const [protondb, steamdeck] = await Promise.all([
         getInfoFromProtonDB(steamID),
         getSteamDeckComp(steamID)
@@ -67,12 +59,12 @@ export async function getWikiGameInfo(
     }
 
     const wikiGameInfo = {
-      timestampLastFetch: Date(),
       pcgamingwiki,
       applegamingwiki,
       howlongtobeat,
       gamesdb,
-      steamInfo
+      steamInfo,
+      umuId
     }
 
     wikiGameInfoStore.set(title, wikiGameInfo)

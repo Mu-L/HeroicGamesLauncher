@@ -19,6 +19,7 @@ import SideloadDialog from './SideloadDialog'
 import WineSelector from './WineSelector'
 import { SelectField } from 'frontend/components/UI'
 import { useTranslation } from 'react-i18next'
+import ThirdPartyDialog from './ThirdPartyDialog'
 
 type Props = {
   appName: string
@@ -60,7 +61,7 @@ export default React.memo(function InstallModal({
     {
       name: 'Linux',
       available: isLinux && (isSideload || isLinuxNative),
-      value: 'linux',
+      value: 'Linux',
       icon: faLinux
     },
     {
@@ -152,15 +153,44 @@ export default React.memo(function InstallModal({
   }
 
   const showDownloadDialog = !isSideload && gameInfo
+  const isThirdPartyManagedApp = gameInfo && !!gameInfo.thirdPartyManagedApp
 
   return (
     <div className="InstallModal">
       <Dialog
         onClose={backdropClick}
         showCloseButton
-        className={'InstallModal__dialog'}
+        className="InstallModal__dialog"
       >
-        {showDownloadDialog ? (
+        {isThirdPartyManagedApp ? (
+          <ThirdPartyDialog
+            appName={appName}
+            runner={runner}
+            winePrefix={winePrefix}
+            wineVersion={wineVersion}
+            availablePlatforms={availablePlatforms}
+            backdropClick={backdropClick}
+            platformToInstall={platformToInstall}
+            gameInfo={gameInfo}
+            crossoverBottle={crossoverBottle}
+          >
+            {platformSelection()}
+            {hasWine ? (
+              <WineSelector
+                appName={appName}
+                winePrefix={winePrefix}
+                wineVersion={wineVersion}
+                wineVersionList={wineVersionList}
+                title={gameInfo?.title}
+                setWinePrefix={setWinePrefix}
+                setWineVersion={setWineVersion}
+                crossoverBottle={crossoverBottle}
+                setCrossoverBottle={setCrossoverBottle}
+                initiallyOpen
+              />
+            ) : null}
+          </ThirdPartyDialog>
+        ) : showDownloadDialog ? (
           <DownloadDialog
             appName={appName}
             runner={runner}
@@ -175,6 +205,7 @@ export default React.memo(function InstallModal({
             {platformSelection()}
             {hasWine ? (
               <WineSelector
+                appName={appName}
                 winePrefix={winePrefix}
                 wineVersion={wineVersion}
                 wineVersionList={wineVersionList}
@@ -200,6 +231,7 @@ export default React.memo(function InstallModal({
             {platformSelection()}
             {hasWine ? (
               <WineSelector
+                appName={appName}
                 winePrefix={winePrefix}
                 wineVersion={wineVersion}
                 wineVersionList={wineVersionList}

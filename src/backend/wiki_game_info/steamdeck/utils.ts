@@ -1,5 +1,6 @@
 import { SteamDeckComp } from 'common/types'
-import axios, { AxiosError } from 'axios'
+import { AxiosError } from 'axios'
+import { axiosClient } from 'backend/utils'
 import { logDebug, logError, LogPrefix } from 'backend/logger/logger'
 
 export async function getSteamDeckComp(
@@ -11,13 +12,13 @@ export async function getSteamDeckComp(
   }
   const url = `https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=${steamID}`
 
-  const response = await axios
+  const response = await axiosClient
     .get(url, { headers: {} })
     .catch((error: AxiosError) => {
       logError(
         [
           `Was not able to get Stem Deck data for ${steamID}`,
-          error.response?.data.error_description
+          error.response?.data
         ],
         LogPrefix.ExtraGameInfo
       )

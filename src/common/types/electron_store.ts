@@ -13,7 +13,9 @@ import {
   WineManagerUISettings,
   AppSettings,
   WikiInfo,
-  GameInfo
+  GameInfo,
+  WindowProps,
+  UploadedLogData
 } from 'common/types'
 import { UserData } from 'common/types/gog'
 import { NileUserData } from './nile'
@@ -26,12 +28,15 @@ export interface StoreStructure {
       recent: RecentGame[]
       hidden: HiddenGame[]
       favourites: FavouriteGame[]
+      customCategories: Record<string, string[]>
     }
     theme: string
     zoomPercent: number
     contentFontFamily: string
     actionsFontFamily: string
     allTilesInColor: boolean
+    titlesAlwaysVisible: boolean
+    disableDialogBackdropClose: boolean
     language: string
     'general-logs': {
       currentLogFile: string
@@ -40,9 +45,10 @@ export interface StoreStructure {
       gogdlLogFile: string
       nileLogFile: string
     }
-    'window-props': Electron.Rectangle
+    'window-props': WindowProps
     settings: AppSettings
     skipVcRuntime: boolean
+    showSnapWarning: boolean
   }
   wineDownloaderInfoStore: {
     'wine-releases': WineVersionInfo[]
@@ -82,6 +88,9 @@ export interface StoreStructure {
       [saveName: string]: string
     }
   }
+  gogPrivateBranches: {
+    [appName: string]: string
+  }
   wineManagerConfigStore: {
     'wine-manager-settings': WineManagerUISettings[]
     'wine-releases': WineVersionInfo[]
@@ -89,6 +98,7 @@ export interface StoreStructure {
   wikigameinfo: {
     [title: string]: WikiInfo
   }
+  uploadedLogs: Record<string, UploadedLogData>
 }
 
 export type StoreOptions<T extends Record<string, unknown>> = Store.Options<T>

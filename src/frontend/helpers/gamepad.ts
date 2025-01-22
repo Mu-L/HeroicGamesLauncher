@@ -69,7 +69,7 @@ export const initGamepad = () => {
     if (controllerIsDisabled) return
 
     if (!isFocused) {
-      // ignore gamepad events if heroic is not the focused app
+      // ignore gamepad events if Heroic is not the focused app
       //
       // the browser still detects the gamepad interactions even
       // if the screen is not focused when playing a game
@@ -132,8 +132,9 @@ export const initGamepad = () => {
             // closes the keyboard if present
             VirtualKeyboardController.destroy()
             return
-          } else if (insideInstallDialog()) {
-            closeInstallDialog()
+          } else if (insideDialog()) {
+            closeDialog()
+            return
           } else if (isSelect()) {
             // closes the select dropdown and re-focus element
             const el = currentElement()
@@ -261,18 +262,18 @@ export const initGamepad = () => {
     return true
   }
 
-  function insideInstallDialog() {
+  function insideDialog() {
     const el = currentElement()
     if (!el) return false
 
-    return !!el.closest('.InstallModal__dialog')
+    return !!el.closest('.Dialog__element')
   }
 
-  function closeInstallDialog() {
+  function closeDialog() {
     const el = currentElement()
     if (!el) return false
 
-    const dialog = el.closest('.InstallModal__dialog')
+    const dialog = el.closest('.Dialog__element')
     if (!dialog) return false
 
     const closeButton = dialog.querySelector<HTMLButtonElement>(
@@ -299,15 +300,61 @@ export const initGamepad = () => {
     }
   }
 
+  /**
+   * Returns true, if the vendor ID is from valve, else false.
+   *
+   * @param gamepad
+   */
+  function isValveGamepad(gamepad: Gamepad | null) {
+    return gamepad && gamepad.id.includes('Vendor: 28de')
+  }
+
+  /**
+   * Returns gamepads that are from valve
+   * - virtual gamepads through Steam Input
+   * - real gamepads like Steam Deck or Steam Controller
+   *
+   * @param gamepads
+   */
+  function filterValveGamepads(gamepads: (Gamepad | null)[]) {
+    return gamepads.filter(isValveGamepad)
+  }
+
+  /**
+   * Returns true, if the gamepad is masked through Steam Input.
+   * Checks if the timestamp of the gamepad is nearly identical of one of the valve gamepads.
+   * There is a threshold of 10, because the timestamps differ from time to time.
+   *
+   * Attention: Without filtering masked gamepads, you have 2 button presses at the same time.
+   *
+   * @param valveGamepads
+   * @param gamepad
+   */
+  function isMaskedGamepad(
+    valveGamepads: (Gamepad | null)[],
+    gamepad: Gamepad
+  ) {
+    return valveGamepads.find(
+      (valveGamepad) =>
+        valveGamepad &&
+        Math.abs(valveGamepad.timestamp - gamepad.timestamp) <= 10
+    )
+  }
+
+  function isValidGamepad(gamepads: (Gamepad | null)[], gamepad: Gamepad) {
+    const valveGamepads = filterValveGamepads(gamepads)
+    return isValveGamepad(gamepad) || !isMaskedGamepad(valveGamepads, gamepad)
+  }
+
   // check all the buttons and axes every frame
   function updateStatus() {
     const gamepads = navigator.getGamepads()
 
     controllers.forEach((index) => {
       const controller = gamepads[index]
-      if (!controller) return
+      if (!controller || !isValidGamepad(gamepads, controller)) return
 
-      logState(index)
+      // logState(index)
 
       const buttons = controller.buttons
       const axes = controller.axes
@@ -334,24 +381,24 @@ export const initGamepad = () => {
     requestAnimationFrame(updateStatus)
   }
 
-  function logState(index: number) {
-    const controller = navigator.getGamepads()[index]
-    if (!controller) return
+  // function logState(index: number) {
+  //   const controller = navigator.getGamepads()[index]
+  //   if (!controller) return
 
-    const buttons = controller.buttons
-    const axes = controller.axes
+  //   const buttons = controller.buttons
+  //   const axes = controller.axes
 
-    for (const button in buttons) {
-      if (buttons[button].pressed)
-        console.log(`button ${button} pressed ${buttons[button].value}`)
-    }
-    for (const axis in axes) {
-      if (axes[axis] < -0.2 && axes[axis] >= -1)
-        console.log(`axis ${axis} activated negative`)
-      if (axes[axis] > 0.2 && axes[axis] <= 1)
-        console.log(`axis ${axis} activated positive`)
-    }
-  }
+  //   for (const button in buttons) {
+  //     if (buttons[button].pressed)
+  //       console.log(`button ${button} pressed ${buttons[button].value}`)
+  //   }
+  //   for (const axis in axes) {
+  //     if (axes[axis] < -0.2 && axes[axis] >= -1)
+  //       console.log(`axis ${axis} activated negative`)
+  //     if (axes[axis] > 0.2 && axes[axis] <= 1)
+  //       console.log(`axis ${axis} activated positive`)
+  //   }
+  // }
 
   function connecthandler(e: GamepadEvent) {
     console.log('controller connected event')

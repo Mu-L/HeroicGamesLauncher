@@ -4,12 +4,13 @@ import {
   GameInfo,
   GameSettings,
   InstallArgs,
-  InstallPlatform
+  InstallPlatform,
+  LaunchOption
 } from 'common/types'
 import { libraryStore } from './electronStores'
 import { GameConfig } from '../../game_config'
 import { isWindows, isMac, isLinux } from '../../constants'
-import { killPattern, shutdownWine } from '../../utils'
+import { killPattern, sendGameStatusUpdate, shutdownWine } from '../../utils'
 import { logInfo, LogPrefix, logWarning } from '../../logger/logger'
 import { dirname } from 'path'
 import { existsSync, rmSync } from 'graceful-fs'
@@ -19,7 +20,6 @@ import {
   removeShortcuts as removeShortcutsUtil
 } from '../../shortcuts/shortcuts/shortcuts'
 import { notify } from '../../dialog/dialog'
-import { sendFrontendMessage } from '../../main_window'
 import { launchGame } from 'backend/storeManagers/storeManagerCommon/games'
 import { GOGCloudSavesLocation } from 'common/types/gog'
 import { InstallResult, RemoveArgs } from 'common/types/game_manager'
@@ -52,25 +52,26 @@ export async function removeShortcuts(appName: string): Promise<void> {
   return removeShortcutsUtil(getGameInfo(appName))
 }
 
-export function isGameAvailable(appName: string): boolean {
-  const { install } = getGameInfo(appName)
+export async function isGameAvailable(appName: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const { install } = getGameInfo(appName)
 
-  if (install && install.platform === 'Browser') {
-    return true
-  }
+    if (install && install.platform === 'Browser') {
+      resolve(true)
+    }
 
-  if (install && install.executable) {
-    return existsSync(install.executable)
-  }
-  return false
+    if (install && install.executable) {
+      resolve(existsSync(install.executable))
+    }
+  })
 }
 
 export async function launch(
   appName: string,
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  launchArguments?: string
+  launchArguments?: LaunchOption,
+  args: string[] = []
 ): Promise<boolean> {
-  return launchGame(appName, getGameInfo(appName), 'sideload')
+  return launchGame(appName, getGameInfo(appName), 'sideload', args)
 }
 
 export async function stop(appName: string): Promise<void> {
@@ -95,7 +96,7 @@ export async function uninstall({
   shouldRemovePrefix,
   deleteFiles = false
 }: RemoveArgs): Promise<ExecResult> {
-  sendFrontendMessage('gameStatusUpdate', {
+  sendGameStatusUpdate({
     appName,
     runner: 'sideload',
     status: 'uninstalling'
@@ -128,7 +129,7 @@ export async function uninstall({
 
   removeShortcutsUtil(gameInfo)
 
-  sendFrontendMessage('gameStatusUpdate', {
+  sendGameStatusUpdate({
     appName,
     runner: 'sideload',
     status: 'done'

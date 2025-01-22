@@ -1,11 +1,13 @@
 import {
+  BaseLaunchOption,
   ExecResult,
   ExtraInfo,
   GameInfo,
   GameSettings,
   InstallArgs,
   InstallPlatform,
-  InstallProgress
+  InstallProgress,
+  LaunchOption
 } from 'common/types'
 import { InstallResult, RemoveArgs } from 'common/types/game_manager'
 import {
@@ -18,30 +20,33 @@ import {
 } from './library'
 import {
   LogPrefix,
+  appendGamePlayLog,
+  appendWinetricksGamePlayLog,
   logDebug,
   logError,
+  logFileLocation,
   logInfo,
   logsDisabled
 } from 'backend/logger/logger'
-import { gamesConfigPath, isWindows } from 'backend/constants'
+import { isLinux, isWindows } from 'backend/constants'
 import { GameConfig } from 'backend/game_config'
 import {
-  createAbortController,
-  deleteAbortController
-} from 'backend/utils/aborthandler/aborthandler'
-import {
+  getKnownFixesEnvVariables,
   getRunnerCallWithoutCredentials,
   launchCleanup,
   prepareLaunch,
   prepareWineLaunch,
   setupEnvVars,
+  setupWrapperEnvVars,
   setupWrappers
 } from 'backend/launcher'
-import { appendFileSync, existsSync } from 'graceful-fs'
-import { logFileLocation } from 'backend/storeManagers/storeManagerCommon/games'
+import { existsSync } from 'graceful-fs'
 import { showDialogBoxModalAuto } from 'backend/dialog/dialog'
 import { t } from 'i18next'
-import { getWineFlags } from 'backend/utils/compatibility_layers'
+import {
+  getWineFlagsArray,
+  isUmuSupported
+} from 'backend/utils/compatibility_layers'
 import shlex from 'shlex'
 import { join } from 'path'
 import {
@@ -49,6 +54,8 @@ import {
   killPattern,
   moveOnUnix,
   moveOnWindows,
+  sendGameStatusUpdate,
+  sendProgressUpdate,
   shutdownWine
 } from 'backend/utils'
 import { GlobalConfig } from 'backend/config'
@@ -59,6 +66,7 @@ import {
 import { removeNonSteamGame } from 'backend/shortcuts/nonesteamgame/nonesteamgame'
 import { sendFrontendMessage } from 'backend/main_window'
 import setup from './setup'
+import { getUmuId } from 'backend/wiki_game_info/umu/utils'
 
 export async function getSettings(appName: string): Promise<GameSettings> {
   const gameConfig = GameConfig.get(appName)
@@ -99,7 +107,8 @@ export async function getExtraInfo(appName: string): Promise<ExtraInfo> {
           description: info.description,
           shortDescription: info.description
         }
-      : undefined
+      : undefined,
+    releaseDate: info?.extra?.releaseDate
   }
 }
 
@@ -109,16 +118,11 @@ export async function importGame(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   platform: InstallPlatform
 ): Promise<ExecResult> {
-  const logPath = join(gamesConfigPath, `${appName}.log`)
-  const res = await runNileCommand(
-    ['import', '--path', folderPath, appName],
-    createAbortController(appName),
-    {
-      logFile: logPath,
-      logMessagePrefix: `Importing ${appName}`
-    }
-  )
-  deleteAbortController(appName)
+  const res = await runNileCommand(['import', '--path', folderPath, appName], {
+    abortId: appName,
+    logFile: logFileLocation(appName),
+    logMessagePrefix: `Importing ${appName}`
+  })
 
   if (res.abort) {
     return res
@@ -228,7 +232,7 @@ export function onInstallOrUpdateOutput(
       LogPrefix.Nile
     )
 
-    sendFrontendMessage(`progressUpdate-${appName}`, {
+    sendProgressUpdate({
       appName,
       runner: 'nile',
       status: action,
@@ -247,25 +251,18 @@ export async function install(
   const { maxWorkers } = GlobalConfig.get().getSettings()
   const workers = maxWorkers ? ['--max-workers', `${maxWorkers}`] : []
 
-  const logPath = join(gamesConfigPath, `${appName}.log`)
-
   const commandParts = ['install', '--base-path', path, ...workers, appName]
 
   const onOutput = (data: string) => {
     onInstallOrUpdateOutput(appName, 'installing', data)
   }
 
-  const res = await runNileCommand(
-    commandParts,
-    createAbortController(appName),
-    {
-      logFile: logPath,
-      onOutput,
-      logMessagePrefix: `Installing ${appName}`
-    }
-  )
-
-  deleteAbortController(appName)
+  const res = await runNileCommand(commandParts, {
+    abortId: appName,
+    logFile: logFileLocation(appName),
+    onOutput,
+    logMessagePrefix: `Installing ${appName}`
+  })
 
   if (res.abort) {
     return { status: 'abort' }
@@ -314,7 +311,8 @@ export async function removeShortcuts(appName: string) {
 
 export async function launch(
   appName: string,
-  launchArguments?: string
+  launchArguments?: LaunchOption,
+  args: string[] = []
 ): Promise<boolean> {
   const gameSettings = await getSettings(appName)
   const gameInfo = getGameInfo(appName)
@@ -325,14 +323,13 @@ export async function launch(
     rpcClient,
     mangoHudCommand,
     gameModeBin,
+    gameScopeCommand,
     steamRuntime
   } = await prepareLaunch(gameSettings, gameInfo, isNative())
 
   if (!launchPrepSuccess) {
-    appendFileSync(
-      logFileLocation(appName),
-      `Launch aborted: ${launchPrepFailReason}`
-    )
+    appendGamePlayLog(gameInfo, `Launch aborted: ${launchPrepFailReason}`)
+    launchCleanup()
     showDialogBoxModalAuto({
       title: t('box.error.launchAborted', 'Launch aborted'),
       message: launchPrepFailReason!,
@@ -344,14 +341,20 @@ export async function launch(
     ? ['--override-exe', gameSettings.targetExe]
     : []
 
-  let commandEnv = isWindows
-    ? process.env
-    : { ...process.env, ...setupEnvVars(gameSettings) }
+  let commandEnv = {
+    ...process.env,
+    ...setupWrapperEnvVars({ appName, appRunner: 'nile' }),
+    ...(isWindows
+      ? {}
+      : setupEnvVars(gameSettings, gameInfo.install.install_path)),
+    ...getKnownFixesEnvVariables(appName, 'nile')
+  }
 
   const wrappers = setupWrappers(
     gameSettings,
     mangoHudCommand,
     gameModeBin,
+    gameScopeCommand,
     steamRuntime?.length ? [...steamRuntime] : undefined
   )
 
@@ -367,10 +370,7 @@ export async function launch(
       envVars: wineEnvVars
     } = await prepareWineLaunch('nile', appName)
     if (!wineLaunchPrepSuccess) {
-      appendFileSync(
-        logFileLocation(appName),
-        `Launch aborted: ${wineLaunchPrepFailReason}`
-      )
+      appendGamePlayLog(gameInfo, `Launch aborted: ${wineLaunchPrepFailReason}`)
       if (wineLaunchPrepFailReason) {
         showDialogBoxModalAuto({
           title: t('box.error.launchAborted', 'Launch aborted'),
@@ -381,21 +381,22 @@ export async function launch(
       return false
     }
 
+    appendWinetricksGamePlayLog(gameInfo)
+
     commandEnv = {
       ...commandEnv,
       ...wineEnvVars
     }
 
-    const { bin: wineExec, type: wineType } = gameSettings.wineVersion
-
-    // Fix for people with old config
-    const wineBin =
-      wineExec.startsWith("'") && wineExec.endsWith("'")
-        ? wineExec.replaceAll("'", '')
-        : wineExec
+    if (await isUmuSupported(gameSettings)) {
+      const umuId = await getUmuId(gameInfo.app_name, gameInfo.runner)
+      if (umuId) {
+        commandEnv['GAMEID'] = umuId
+      }
+    }
 
     wineFlag = [
-      ...getWineFlags(wineBin, wineType, shlex.join(wrappers)),
+      ...(await getWineFlagsArray(gameSettings, shlex.join(wrappers))),
       '--wine-prefix',
       gameSettings.winePrefix
     ]
@@ -405,34 +406,31 @@ export async function launch(
     'launch',
     ...exeOverrideFlag, // Check if this works
     ...wineFlag,
-    ...shlex.split(launchArguments ?? ''),
+    ...shlex.split(
+      (launchArguments as BaseLaunchOption | undefined)?.parameters ?? ''
+    ),
     ...shlex.split(gameSettings.launcherArgs ?? ''),
-    appName
+    appName,
+    ...args
   ]
   const fullCommand = getRunnerCallWithoutCredentials(
     commandParts,
     commandEnv,
     join(...Object.values(getNileBin()))
   )
-  appendFileSync(
-    logFileLocation(appName),
-    `Launch Command: ${fullCommand}\n\nGame Log:\n`
-  )
+  appendGamePlayLog(gameInfo, `Launch Command: ${fullCommand}\n\nGame Log:\n`)
 
-  const { error } = await runNileCommand(
-    commandParts,
-    createAbortController(appName),
-    {
-      env: commandEnv,
-      wrappers,
-      logMessagePrefix: `Launching ${gameInfo.title}`,
-      onOutput(output) {
-        if (!logsDisabled) appendFileSync(logFileLocation(appName), output)
-      }
+  sendGameStatusUpdate({ appName, runner: 'nile', status: 'playing' })
+
+  const { error } = await runNileCommand(commandParts, {
+    abortId: appName,
+    env: commandEnv,
+    wrappers,
+    logMessagePrefix: `Launching ${gameInfo.title}`,
+    onOutput(output) {
+      if (!logsDisabled) appendGamePlayLog(gameInfo, output)
     }
-  )
-
-  deleteAbortController(appName)
+  })
 
   if (error) {
     logError(['Error launching game:', error], LogPrefix.Nile)
@@ -481,16 +479,14 @@ export async function repair(appName: string): Promise<ExecResult> {
   }
 
   logDebug([appName, 'is installed at', install_path], LogPrefix.Nile)
-  const logPath = join(gamesConfigPath, `${appName}.log`)
   const res = await runNileCommand(
     ['verify', '--path', install_path, appName],
-    createAbortController(appName),
     {
-      logFile: logPath,
+      abortId: appName,
+      logFile: logFileLocation(appName),
       logMessagePrefix: `Repairing ${appName}`
     }
   )
-  deleteAbortController(appName)
 
   if (res.error) {
     logError(['Failed to repair', `${appName}:`, res.error], LogPrefix.Nile)
@@ -507,14 +503,10 @@ export async function syncSaves(): Promise<string> {
 export async function uninstall({ appName }: RemoveArgs): Promise<ExecResult> {
   const commandParts = ['uninstall', appName]
 
-  const res = await runNileCommand(
-    commandParts,
-    createAbortController(appName),
-    {
-      logMessagePrefix: `Uninstalling ${appName}`
-    }
-  )
-  deleteAbortController(appName)
+  const res = await runNileCommand(commandParts, {
+    abortId: appName,
+    logMessagePrefix: `Uninstalling ${appName}`
+  })
 
   if (res.error) {
     logError(['Failed to uninstall', `${appName}:`, res.error], LogPrefix.Nile)
@@ -532,25 +524,18 @@ export async function update(appName: string): Promise<InstallResult> {
   const { maxWorkers } = GlobalConfig.get().getSettings()
   const workers = maxWorkers ? ['--max-workers', `${maxWorkers}`] : []
 
-  const logPath = join(gamesConfigPath, `${appName}.log`)
-
   const commandParts = ['update', ...workers, appName]
 
   const onOutput = (data: string) => {
     onInstallOrUpdateOutput(appName, 'updating', data)
   }
 
-  const res = await runNileCommand(
-    commandParts,
-    createAbortController(appName),
-    {
-      logFile: logPath,
-      onOutput,
-      logMessagePrefix: `Updating ${appName}`
-    }
-  )
-
-  deleteAbortController(appName)
+  const res = await runNileCommand(commandParts, {
+    abortId: appName,
+    logFile: logFileLocation(appName),
+    onOutput,
+    logMessagePrefix: `Updating ${appName}`
+  })
 
   if (res.abort) {
     return { status: 'abort' }
@@ -563,7 +548,7 @@ export async function update(appName: string): Promise<InstallResult> {
     return { status: 'error', error: res.error }
   }
 
-  sendFrontendMessage('gameStatusUpdate', {
+  sendGameStatusUpdate({
     appName,
     runner: 'nile',
     status: 'done'
@@ -577,7 +562,7 @@ export async function forceUninstall(appName: string) {
 }
 
 export async function stop(appName: string, stopWine = true) {
-  const pattern = process.platform === 'linux' ? appName : 'nile'
+  const pattern = isLinux ? appName : 'nile'
   killPattern(pattern)
 
   if (stopWine && !isNative()) {
@@ -586,11 +571,15 @@ export async function stop(appName: string, stopWine = true) {
   }
 }
 
-export function isGameAvailable(appName: string): boolean {
-  const info = getGameInfo(appName)
-  return Boolean(
-    info?.is_installed &&
-      info.install.install_path &&
-      existsSync(info.install.install_path)
-  )
+export async function isGameAvailable(appName: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const info = getGameInfo(appName)
+    resolve(
+      Boolean(
+        info?.is_installed &&
+          info.install.install_path &&
+          existsSync(info.install.install_path)
+      )
+    )
+  })
 }

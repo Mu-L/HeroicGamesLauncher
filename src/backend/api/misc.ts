@@ -5,12 +5,13 @@ import {
   Tools,
   DialogType,
   ButtonOptions,
-  GamepadActionArgs
+  GamepadActionArgs,
+  type UploadedLogData
 } from 'common/types'
 import { NileRegisterData } from 'common/types/nile'
 
-export const clearCache = (showDialog?: boolean) =>
-  ipcRenderer.send('clearCache', showDialog)
+export const clearCache = (showDialog?: boolean, fromVersionChange?: boolean) =>
+  ipcRenderer.send('clearCache', showDialog, fromVersionChange)
 export const resetHeroic = () => ipcRenderer.send('resetHeroic')
 
 export const openWeblate = () => ipcRenderer.send('openWeblate')
@@ -29,6 +30,37 @@ export const getCurrentChangelog = async () =>
 export const openPatreonPage = () => ipcRenderer.send('openPatreonPage')
 export const openKofiPage = () => ipcRenderer.send('openKofiPage')
 export const isFullscreen = async () => ipcRenderer.invoke('isFullscreen')
+export const isFrameless = async () => ipcRenderer.invoke('isFrameless')
+export const isMinimized = async () => ipcRenderer.invoke('isMinimized')
+export const isMaximized = async () => ipcRenderer.invoke('isMaximized')
+export const minimizeWindow = () => ipcRenderer.send('minimizeWindow')
+export const maximizeWindow = () => ipcRenderer.send('maximizeWindow')
+export const unmaximizeWindow = () => ipcRenderer.send('unmaximizeWindow')
+export const closeWindow = () => ipcRenderer.send('closeWindow')
+export const handleMaximized = (
+  callback: (e: Electron.IpcRendererEvent) => void
+) => {
+  ipcRenderer.on('maximized', callback)
+  return () => {
+    ipcRenderer.removeListener('maximized', callback)
+  }
+}
+export const handleUnmaximized = (
+  callback: (e: Electron.IpcRendererEvent) => void
+) => {
+  ipcRenderer.on('unmaximized', callback)
+  return () => {
+    ipcRenderer.removeListener('unmaximized', callback)
+  }
+}
+export const handleFullscreen = (
+  callback: (e: Electron.IpcRendererEvent, status: boolean) => void
+) => {
+  ipcRenderer.on('fullscreen', callback)
+  return () => {
+    ipcRenderer.removeListener('fullscreen', callback)
+  }
+}
 
 export const openWebviewPage = (url: string) =>
   ipcRenderer.send('openWebviewPage', url)
@@ -36,8 +68,7 @@ export const openWebviewPage = (url: string) =>
 export const setZoomFactor = (zoom: string) =>
   ipcRenderer.send('setZoomFactor', zoom)
 export const frontendReady = () => ipcRenderer.send('frontendReady')
-export const loadingScreenReady = () => ipcRenderer.send('loadingScreenReady')
-export const lock = () => ipcRenderer.send('lock')
+export const lock = (playing: boolean) => ipcRenderer.send('lock', playing)
 export const unlock = () => ipcRenderer.send('unlock')
 export const login = async (sid: string) => ipcRenderer.invoke('login', sid)
 export const logoutLegendary = async () => ipcRenderer.invoke('logoutLegendary')
@@ -97,8 +128,9 @@ export const pathExists = async (path: string) =>
 export const processShortcut = async (combination: string) =>
   ipcRenderer.send('processShortcut', combination)
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const handleGoToScreen = (callback: any) => {
+export const handleGoToScreen = (
+  callback: (e: Electron.IpcRendererEvent, screen: string) => void
+) => {
   ipcRenderer.on('openScreen', callback)
   return () => {
     ipcRenderer.removeListener('openScreen', callback)
@@ -177,3 +209,26 @@ export const fetchPlaytimeFromServer = async (
   runner: Runner,
   appName: string
 ) => ipcRenderer.invoke('getPlaytimeFromRunner', runner, appName)
+
+export const getUploadedLogFiles = async () =>
+  ipcRenderer.invoke('getUploadedLogFiles')
+export const uploadLogFile = async (name: string, appNameOrRunner: string) =>
+  ipcRenderer.invoke('uploadLogFile', name, appNameOrRunner)
+export const deleteUploadedLogFile = async (url: string) =>
+  ipcRenderer.invoke('deleteUploadedLogFile', url)
+
+export const logFileUploadedSlot = (
+  callback: (
+    e: Electron.IpcRendererEvent,
+    url: string,
+    data: UploadedLogData
+  ) => void
+) => {
+  ipcRenderer.on('logFileUploaded', callback)
+}
+
+export const logFileUploadDeletedSlot = (
+  callback: (e: Electron.IpcRendererEvent, url: string) => void
+) => {
+  ipcRenderer.on('logFileUploadDeleted', callback)
+}

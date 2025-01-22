@@ -1,5 +1,5 @@
 import './index.scss'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { Runner } from 'common/types'
 import ToggleSwitch from '../ToggleSwitch'
 import { useNavigate, useLocation } from 'react-router-dom'
+import ContextProvider from 'frontend/state/ContextProvider'
 
 interface UninstallModalProps {
   appName: string
@@ -33,6 +34,13 @@ const UninstallModal: React.FC<UninstallModalProps> = function ({
   const [showUninstallModal, setShowUninstallModal] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { installingEpicGame, libraryStatus } = useContext(ContextProvider)
+  const [gameTitle, setGameTitle] = useState('')
+
+  const isGameRunning = libraryStatus.find(
+    (st) =>
+      st.appName === appName && st.runner === runner && st.status === 'playing'
+  )
 
   const checkIfIsNative = async () => {
     // This assumes native games are installed should be changed in the future
@@ -55,6 +63,8 @@ const UninstallModal: React.FC<UninstallModalProps> = function ({
     if (!gameInfo) {
       return
     }
+
+    setGameTitle(gameInfo.title)
 
     const { install } = gameInfo
     if (install.platform?.toLowerCase() !== 'windows') {
@@ -94,6 +104,59 @@ const UninstallModal: React.FC<UninstallModalProps> = function ({
 
   const showWineCheckbox = !isNative && !isDlc
 
+  // disallow uninstalling epic games if an epic game is being installed
+  if (installingEpicGame && runner === 'legendary') {
+    return (
+      <>
+        {showUninstallModal && (
+          <Dialog onClose={onClose} showCloseButton className="uninstall-modal">
+            <DialogHeader onClose={onClose}>
+              {t('gamepage:box.uninstall.title')}
+            </DialogHeader>
+            <DialogContent>
+              {t(
+                'gamepage:box.uninstall.cannotUninstallEpic',
+                'Epic games cannot be uninstalled while another Epic game is being installed.'
+              )}
+            </DialogContent>
+            <DialogFooter>
+              <button onClick={onClose} className={`button outline`}>
+                {t('box.close', 'Close')}
+              </button>
+            </DialogFooter>
+          </Dialog>
+        )}
+      </>
+    )
+  }
+
+  if (isGameRunning) {
+    return (
+      <>
+        {showUninstallModal && (
+          <Dialog onClose={onClose} showCloseButton className="uninstall-modal">
+            <DialogHeader onClose={onClose}>
+              {t('gamepage:box.uninstall.title')}
+            </DialogHeader>
+            <DialogContent>
+              {t('gamepage:box.uninstall.gameIsRunning', {
+                defaultValue:
+                  '{{title}} is running. Close the game to uninstall it.',
+                title: gameTitle
+              })}
+            </DialogContent>
+            <DialogFooter>
+              <button onClick={onClose} className={`button outline`}>
+                {t('box.close', 'Close')}
+              </button>
+            </DialogFooter>
+          </Dialog>
+        )}
+      </>
+    )
+  }
+
+  // normal dialog to uninstall a game
   return (
     <>
       {showUninstallModal && (
@@ -104,11 +167,14 @@ const UninstallModal: React.FC<UninstallModalProps> = function ({
           <DialogContent>
             <div className="uninstallModalMessage">
               {isDlc
-                ? t(
-                    'gamepage:box.uninstall.dlc',
-                    'Do you want to Uninstall this DLC?'
-                  )
-                : t('gamepage:box.uninstall.message')}
+                ? t('gamepage:box.uninstall.dlc', {
+                    defaultValue: 'Do you want to uninstall "{{title}}" (DLC)?',
+                    title: gameTitle
+                  })
+                : t('gamepage:box.uninstall.message', {
+                    defaultValue: 'Do you want to uninstall "{{title}}"?',
+                    title: gameTitle
+                  })}
             </div>
             {showWineCheckbox && (
               <ToggleSwitch

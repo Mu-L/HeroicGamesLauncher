@@ -152,12 +152,18 @@
             "wine-change": {
                 "message": "Nu am putut găsi versiunea de vin selectată pentru a lansa acest titlu ({{selectedWine}}). {{newline}} Am găsit altul, doriți să continuați lansarea folosind {{foundWine}}?",
                 "title": "Vinul nu a fost găsit!"
+            },
+            "sideload": {
+                "confirmExit": {
+                    "title": "Sigur doriți să vă deconectați?"
+                }
             }
         },
         "wineprefix": "Alegeți dosarul Wine Prefix",
         "yes": "DA",
         "dontShowAgain": "Nu mai arăta",
-        "choose-nile-binary": "Selectați binarul Nil"
+        "choose-nile-binary": "Selectați binarul Nil",
+        "update": "Update"
     },
     "button": {
         "cancel": "Cancel",
@@ -239,7 +245,8 @@
         "show_available_games": "Show non-Available games",
         "show_favourites_only": "Afișați numai Favoritele",
         "show_hidden": "Arata ascuns",
-        "store": "Magazin de filtre"
+        "store": "Magazin de filtre",
+        "filters": "Filtru"
     },
     "help": {
         "amdfsr": "FSR de la AMD ajută la creșterea ratei de cadre prin creșterea rezoluțiilor mai mici în modul Ecran complet. Calitatea imaginii crește de la 5 la 1 cu prețul unei ușoare atingeri de performanță. Activarea poate îmbunătăți performanța.",
@@ -280,7 +287,13 @@
             "part1": "Heroic caută pentru versiuni de Wine, Proton și CrossOver în următoarele foldere:",
             "part2": "Pentru alte locuri, utilizați un link simbolic către unul dintre aceste dosare"
         },
-        "disable_logs": "Activați această casetă de selectare pentru a dezactiva majoritatea scrierilor în fișierele jurnal (informațiile critice sunt întotdeauna înregistrate). Asigurați-vă că dezactivați această setare înainte de a raporta orice problemă."
+        "disable_logs": "Activați această casetă de selectare pentru a dezactiva majoritatea scrierilor în fișierele jurnal (informațiile critice sunt întotdeauna înregistrate). Asigurați-vă că dezactivați această setare înainte de a raporta orice problemă.",
+        "title": {
+            "login": "Autentificare",
+            "settings": "Setări",
+            "downloadManager": "Download Manager",
+            "library": "Bibliotecă"
+        }
     },
     "info": {
         "heroic": {
@@ -531,7 +544,10 @@
             "instructions_title": "Cum se raportează o problemă?",
             "last-log": "Ultimul jurnal",
             "no-file": "Nu a fost găsit niciun fișier jurnal",
-            "show-in-folder": "Afișați fișierul jurnal în dosar"
+            "show-in-folder": "Afișați fișierul jurnal în dosar",
+            "upload": {
+                "actions": "Action"
+            }
         },
         "mangohud": "Activați Mangohud (Mangohud trebuie instalat)",
         "manualsync": {
@@ -577,7 +593,9 @@
         "disable_logs": "Dezactivați jurnalele",
         "addgamestoapplications": "Adăugați automat jocuri la Aplicații",
         "showMetalOverlay": "Afișați statistici suprapuse",
-        "alt-nile-bin": "Alegeți un binar alternativ pentru Nil"
+        "alt-nile-bin": "Alegeți un binar alternativ pentru Nil",
+        "autodxvknvapi": "Instalare/Actualizare automată DXVK-NVAPI în Prefix",
+        "msync": "Activați Esync"
     },
     "settings": {
         "battlEyeRuntime": {
@@ -619,6 +637,13 @@
         "saves": {
             "label": "Salveaza locatia:",
             "warning": "Funcția Cloud Saves este în versiune beta, vă rugăm să faceți backup înainte de sincronizare (în cazul în care ceva nu merge bine)"
+        },
+        "advanced": {
+            "clearCache": {
+                "help8": "Jocuri instalate",
+                "help9": "Game Settings"
+            },
+            "details": "Detalii"
         }
     },
     "Settings": "Setări",
@@ -702,5 +727,16 @@
     },
     "amazon": "Amazon",
     "prime-gaming": "Prime Gaming",
-    "Amazon Games": "Jocuri Amazon"
+    "Amazon Games": "Jocuri Amazon",
+    "winetricks": {
+        "install": "Install",
+        "loading": "Loading"
+    },
+    "category-settings": {
+        "cancel": "Cancel",
+        "warning": "Warning"
+    },
+    "window": {
+        "close": "Închide"
+    }
 }

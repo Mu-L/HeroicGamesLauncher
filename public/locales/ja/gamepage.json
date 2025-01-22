@@ -18,7 +18,7 @@
             "title": "検証と修復"
         },
         "runexe": {
-            "title": "実行するEXEを選択"
+            "title": "実行するEXEを選択してください"
         },
         "select": {
             "button": "選択"
@@ -32,29 +32,32 @@
             "title": "インストールを中止"
         },
         "uninstall": {
-            "checkbox": "環境を削除します: {{prefix}}{{newLine}}注意: この操作は元に戻すことができず、バックアップされていない保存ファイルも削除されます。",
-            "message": "このゲームをアンインストールしますか?",
+            "checkbox": "プレフィックスを削除: {{prefix}}{{newLine}}注意: これは元に戻すことができず、バックアップされていない保存ファイルも削除されます。",
+            "message": "\"{{title}}\"をアンインストールしますか?",
             "settingcheckbox": "設定を消去し、ログを削除します{{newLine}}注意: この操作は元に戻すことができません。変更された設定はすべて失われ、ログは削除されます。",
             "title": "アンインストール",
             "prefix_warning": "このゲームが使用しているWine環境はデフォルトの環境です。本当に削除したい場合は、手動で行う必要があります。",
-            "dlc": "このDLCをアンインストールしますか?"
+            "dlc": "\"{{title}}\"のDLCをアンインストールしますか?",
+            "cannotUninstallEpic": "別のEpicゲームをインストール中に、Epicゲームをアンインストールすることはできません。",
+            "gameIsRunning": "{{title}}が実行中です。 アンインストールするにはゲームを終了してください。"
         },
         "update": {
-            "message": "このゲームにはアップデートがあります。今すぐアップデートを適用しますか?",
+            "message": "このゲームにはアップデートがありますが、今すぐアップデートしますか？",
             "title": "ゲームのアップデート"
         },
         "wineprefix": "Wine環境フォルダを選択",
-        "yes": "はい"
+        "yes": "はい",
+        "close": "閉じる"
     },
     "button": {
         "add_to_favourites": "お気に入りに追加",
         "cancel": "一時停止/キャンセル",
         "continue": "ダウンロードを続ける",
         "finish": "終了",
-        "force_update": "強制アップデート（利用可能な場合）",
+        "force_update": "利用可能な場合は更新を強制する",
         "force-innstall": "強制インストール",
-        "hide_game": "ゲームを非表示",
-        "import": "ゲームをインポート",
+        "hide_game": "ゲームを非表示にする",
+        "import": "ゲームをインポートする",
         "install": "インストール",
         "no-path-selected": "パスが選択されていません",
         "queue": {
@@ -70,12 +73,13 @@
         "unhide_game": "ゲームを再表示",
         "uninstall": "アンインストール",
         "update": "アップデート",
-        "details": "詳細"
+        "details": "詳細",
+        "changelog": "変更履歴を確認"
     },
     "cloud_save_unsupported": "非対応",
     "disabled": "無効",
     "dlc": {
-        "installDlcs": "すべてのDLCをインストール"
+        "installDlcs": "すべてのDLCをインストールします"
     },
     "enabled": "有効",
     "game": {
@@ -90,7 +94,22 @@
         "platform": "インストールするプラットフォームのバージョンを選択",
         "requirements": "システム要件",
         "totalPlayed": "プレイ時間",
-        "dlcs": "DLCs"
+        "dlcs": "DLC一覧",
+        "branch": {
+            "disabled": "無効",
+            "select": "ベータチャンネルを選択",
+            "setPrivateBranchPassword": "プライベートチャンネルのパスワード設定",
+            "password": "プライベートチャンネルのパスワード設定"
+        },
+        "builds": {
+            "version": "バージョン",
+            "buildsSelector": "ゲームバージョンを選択",
+            "toggle": "ゲームを特定のバージョンに保つ"
+        },
+        "changelogFor": "{{gameTitle}}の変更履歴",
+        "modify": "インストールの変更",
+        "extra_info": "追加情報",
+        "install_info": "インストール情報"
     },
     "gamecard": {
         "moving": "移動中",
@@ -115,11 +134,12 @@
         "syncsaves": "セーブデータ同期",
         "version": "バージョン",
         "apple-gaming-wiki": "AppleGamingWikiの評価",
-        "clickToOpen": "クリックして開きます",
-        "game-scores": "ゲームのスコア",
+        "clickToOpen": "クリックして開く",
+        "game-scores": "ゲームの評価",
         "installedInfo": "インストール情報",
-        "protondb-compatibility-info": "プロトン互換性層",
-        "steamdeck-compatibility-info": "SteamDeck の互換性"
+        "protondb-compatibility-info": "Proton互換性レベル",
+        "steamdeck-compatibility-info": "SteamDeck の互換性",
+        "third-party-app": "サードパーティマネージャー"
     },
     "install": {
         "disk-space-left": "空き領域",
@@ -128,12 +148,23 @@
         "path-not-writtable": "警告: パスが書き込み可能でない可能性があります。",
         "space-after-install": "インストール後",
         "wineprefix": "Wine環境",
-        "wineversion": "Wineバージョン"
+        "wineversion": "Wineバージョン",
+        "anticheat-warning": {
+            "cancel": "いいえ",
+            "message": "アンチチートサポートは機能しないか拒否されます。ゲームは正常に動作しません。それでもインストールしますか？",
+            "install": "はい（正しく機能しないことは理解しています）",
+            "title": "アンチチート 破損/拒否",
+            "ok": "Ok",
+            "disabled_installation": "アンチチートのサポートが壊れているか拒否されており、マルチプレイ機能が動作しません。 ゲームをインストールできません。 このゲームをインストールする場合は、詳細設定でこのチェックを無効にしてください。",
+            "install_anyway": "OK（マルチプレイ機能が使えないことを理解しました）",
+            "multiplayer_message": "アンチチートのサポートが壊れているか拒否されています。 マルチプレイ機能は動作しませんが、インストールしますか？"
+        },
+        "flatpak-path-not-writtable": "エラー：このパスにサンドボックスへのアクセスが許可されていないため、データの損失が発生します。"
     },
     "label": {
         "game": {
             "third-party-game": "非対応のサードパーティ製ゲーム",
-            "not-installable-game": "ゲームはインストールできません"
+            "not-installable-game": "ゲームをインストールできません"
         },
         "playing": {
             "start": "今すぐプレイ",
@@ -143,7 +174,10 @@
             "syncing": "セーブデータを同期中"
         },
         "launching": "起動中",
-        "ubisoft": "Ubisoft Connectをインストール中"
+        "ubisoft": "Ubisoft Connectをインストール中",
+        "prerequisites": "前提条件のインストール",
+        "winetricks": "Winetricksパッケージのインストール",
+        "redist": "再頒布可能ファイルのインストール"
     },
     "launch": {
         "options": "起動オプション…"
@@ -153,7 +187,7 @@
         "gog": "HeroicにGOGアカウントでログインしていません。ストアページを使用してログインせず、代わりに次のボタンをクリックしてください:",
         "login": "ログイン",
         "title": "ログインしていません",
-        "amazon": "You are not logged in with an Epic account in Heroic. Don't use the store page to login, click the following button instead:"
+        "amazon": "HeroicのAmazonアカウントでログインしていません。 ストアページを使用してログインしないでください。代わりに次のボタンをクリックしてください:"
     },
     "report_problem": "このゲームの実行に関する問題を報告",
     "sdl": {
@@ -161,7 +195,9 @@
     },
     "setting": {
         "use-default-wine-settings": "デフォルトのWine設定を使用",
-        "winecrossoverbottle": "CrossOverボトル"
+        "winecrossoverbottle": "CrossOverボトル",
+        "show-wine-settings": "Wineの設定を表示する",
+        "warn-use-default-wine-settings": "このオプションは、自分で理解できる場合のみ使用してください。<br/>複数のゲームで同じprefixフォルダを共用すると、依存関係に互換性がない場合に問題が発生する可能性があります。"
     },
     "sideload": {
         "field": {
@@ -171,12 +207,15 @@
             "exe": "実行可能ファイルを選択",
             "image": "Appイメージ",
             "title": "ゲーム/Appタイトル",
-            "broser": "ブラウザのURL"
+            "broser": "ブラウザURL",
+            "useragent": "カスタムユーザーエージェント",
+            "fullscreen": "フルスクリーンで起動（F11で終了）"
         },
         "placeholder": {
             "image": "ここにイメージURLをペーストしてください",
             "title": "ゲーム/Appにタイトルを追加してください",
-            "url": "ゲームの URL をここに貼り付けます"
+            "url": "ゲームのURLをここに貼り付けます",
+            "useragent": "このブラウザゲーム/Appで使用するカスタムユーザーエージェントを入力します"
         }
     },
     "specs": {
@@ -201,14 +240,17 @@
         "uninstalling": "アンインストール中",
         "updating": "ゲームをアップデート中",
         "playing": "プレイ中",
-        "moving-files": "ファイル '{{file}}' を移動中: {{percent}} ",
+        "moving-files": "ファイル '{{file}}' を移動中: {{percent}} %",
         "syncingSaves": "セーブデータを同期中",
         "launching": "起動中",
         "ubisoft": "Ubisoftをインストール中",
         "downloading": "ダウンロード中",
-        "extracting": "抽出中",
-        "gog-goodie": "このゲームはインストールできないようです。 https://gog.com/account でダウンロード可能なコンテンツを確認してください",
-        "goodie": "インストール不可"
+        "extracting": "展開中",
+        "gog-goodie": "このゲームをインストールできません。https://gog.com/account でダウンロード可能なコンテンツを確認してください。",
+        "goodie": "インストール不可",
+        "prerequisites": "前提条件のインストール",
+        "winetricks": "Winetricksの修正を適用する",
+        "redist": "再頒布可能ファイルのインストール ({{redist}})"
     },
     "submenu": {
         "addShortcut": "ショートカットを追加",
@@ -224,9 +266,30 @@
         "store": "ストアページ",
         "verify": "検証と修復",
         "extraInfo": "追加情報",
-        "logs": "ログ"
+        "logs": "ログ",
+        "categories": "カテゴリー"
     },
     "help": {
-        "cloud_save_unsupported": "このゲームはクラウドセーブに対応していません。この情報はゲーム開発者によって提供されたものです。一部のゲームでは、独自のクラウドセーブシステムを実装しているものもあります"
+        "cloud_save_unsupported": "このゲームはクラウドセーブに対応していません。この情報はゲーム開発者によって提供されたものです。一部のゲームでは、独自のクラウドセーブシステムを実装しているものもあります",
+        "content": {
+            "gamePage": "すべてのゲームの詳細とアクションを表示します。より多くのオプションを表示するには、3つのドットメニューを使用します。"
+        },
+        "title": {
+            "gamePage": "ゲームページ"
+        }
+    },
+    "modifyInstall": {
+        "dlcsCollapsible": "DLC",
+        "nodlcs": "DLCはありません",
+        "redMod": {
+            "enable": "MODを有効化",
+            "collapsible": "REDmodの統合"
+        },
+        "versionCollapsable": "ゲームバージョン"
+    },
+    "third-party-managed": {
+        "notice2": "インストールをクリックすると、Heroicはインストールプロセスを完了するためにアプリケーションを実行します",
+        "header": "このゲームはサードパーティのアプリケーションによって管理されています",
+        "notice1": "このゲームはサードパーティのアプリケーションによって管理されています： \"{{application_name}}\""
     }
 }

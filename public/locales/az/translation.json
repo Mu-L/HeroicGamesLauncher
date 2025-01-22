@@ -1,6 +1,6 @@
 {
     "accessibility": {
-        "actions_font_family_no_default": "Actions Font Family (Default: ",
+        "actions_font_family_no_default": "Hərəkət Yazıtipi Ailəsi (Default):",
         "all_tiles_in_color": "Bütün oyun plitələrini rəngli göstərin",
         "content_font_family_no_default": "Content Font Family (Default: ",
         "fonts": "Şriftlər",
@@ -157,7 +157,8 @@
         "wineprefix": "Şərab Prefiks Qovluğu seçin",
         "yes": "HƏ",
         "dontShowAgain": "Bir daha göstərmə",
-        "choose-nile-binary": "Nil binarını seçin"
+        "choose-nile-binary": "Nil binarını seçin",
+        "update": "Update"
     },
     "button": {
         "cancel": "Cancel",
@@ -218,7 +219,8 @@
     "game": {
         "status": "Vəziyyət",
         "store": "Mağaza",
-        "title": "Oyunun adı"
+        "title": "Oyunun adı",
+        "modify": "Quraşdırmaya dəyişiklik et"
     },
     "generic": {
         "error": {
@@ -239,7 +241,8 @@
         "show_available_games": "Show non-Available games",
         "show_favourites_only": "Yalnız Sevimliləri göstərin",
         "show_hidden": "Gizli göstər",
-        "store": "Filtr Mağazası"
+        "store": "Filtr Mağazası",
+        "categories": "Kateqoriyalar"
     },
     "help": {
         "amdfsr": "AMD-nin FSR tam ekran rejimində daha aşağı təsvir ölçüsünü artırmaqla kadr sürətini artırmağa kömək edir. Şəkil keyfiyyəti cüzi performans zərbəsi hesabına 5-dən 1-ə yüksəlir. Aktivləşdirmək performansı yaxşılaşdıra bilər.",
@@ -280,7 +283,10 @@
             "part1": "Qəhrəmanlıq aşağıdakı qovluqlarda Wine, Proton və CrossOver versiyalarını axtarır:",
             "part2": "Digər yerlər üçün bu qovluqlardan birinə simvolik keçiddən istifadə edin"
         },
-        "disable_logs": "Giriş fayllarına yazılanların əksəriyyətini söndürmək üçün bu qeyd qutusunu AKTİV vəziyyətinə qoyun (kritik məlumatlar həmişə qeyd olunur). Hər hansı problemi bildirməzdən əvvəl bu ayarı SÖNDÜRLƏNDİYƏ əmin olun."
+        "disable_logs": "Giriş fayllarına yazılanların əksəriyyətini söndürmək üçün bu qeyd qutusunu AKTİV vəziyyətinə qoyun (kritik məlumatlar həmişə qeyd olunur). Hər hansı problemi bildirməzdən əvvəl bu ayarı SÖNDÜRLƏNDİYƏ əmin olun.",
+        "title": {
+            "downloadManager": "Download Manager"
+        }
     },
     "info": {
         "heroic": {
@@ -531,7 +537,10 @@
             "instructions_title": "Problemi necə bildirmək olar?",
             "last-log": "Son Giriş",
             "no-file": "Heç bir jurnal faylı tapılmadı",
-            "show-in-folder": "Günlük faylını qovluqda göstərin"
+            "show-in-folder": "Günlük faylını qovluqda göstərin",
+            "upload": {
+                "actions": "Action"
+            }
         },
         "mangohud": "Mangohudu aktivləşdirin (Mangohud quraşdırılmalıdır)",
         "manualsync": {
@@ -619,6 +628,12 @@
         "saves": {
             "label": "Məkanı Saxla:",
             "warning": "Bulud Saxlama funksiyası Beta-dadır, lütfən, sinxronizasiya etməzdən əvvəl yaddaşı ehtiyat nüsxəsini çıxarın (nəsə səhv olarsa)"
+        },
+        "advanced": {
+            "details": "Təfərrüatlar",
+            "clearCache": {
+                "help9": "Game Settings"
+            }
         }
     },
     "Settings": "Parametrlər",
@@ -702,5 +717,16 @@
     },
     "amazon": "Amazon",
     "Amazon Games": "Amazon Oyunları",
-    "prime-gaming": "Baş Oyun"
+    "prime-gaming": "Baş Oyun",
+    "winetricks": {
+        "install": "Install",
+        "loading": "Loading"
+    },
+    "category-settings": {
+        "cancel": "Cancel",
+        "warning": "Warning"
+    },
+    "window": {
+        "close": "Bağla"
+    }
 }

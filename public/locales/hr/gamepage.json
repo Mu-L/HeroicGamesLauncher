@@ -90,7 +90,13 @@
         "platform": "Odaberi verziju platforme za instalirati",
         "requirements": "Zahtjevi sustava",
         "totalPlayed": "Vrijeme igranja",
-        "dlcs": "DLCs"
+        "dlcs": "DLCs",
+        "branch": {
+            "disabled": "Disabled"
+        },
+        "builds": {
+            "version": "Verzija"
+        }
     },
     "gamecard": {
         "moving": "Premještanje",
@@ -128,7 +134,10 @@
         "path-not-writtable": "Upozorenje: u stazu se možda ne može pisati.",
         "space-after-install": "Nakon Instalacije",
         "wineprefix": "WinePrefix",
-        "wineversion": "Wine verzija"
+        "wineversion": "Wine verzija",
+        "anticheat-warning": {
+            "ok": "Ok"
+        }
     },
     "label": {
         "game": {

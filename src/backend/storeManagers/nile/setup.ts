@@ -8,8 +8,11 @@ import {
 import { fetchFuelJSON, getGameInfo } from './library'
 import { GameConfig } from 'backend/game_config'
 import { isWindows } from 'backend/constants'
-import { checkWineBeforeLaunch, spawnAsync } from 'backend/utils'
-import { logFileLocation } from '../storeManagerCommon/games'
+import {
+  checkWineBeforeLaunch,
+  sendGameStatusUpdate,
+  spawnAsync
+} from 'backend/utils'
 import { runWineCommand, verifyWinePrefix } from 'backend/launcher'
 
 /**
@@ -20,6 +23,11 @@ export default async function setup(
   installedPath?: string
 ): Promise<void> {
   const gameInfo = getGameInfo(appName)
+  if (!gameInfo) {
+    logError([`Could not find game info for ${appName}. Skipping setup`])
+    return
+  }
+
   const basePath = installedPath ?? gameInfo?.install.install_path
   if (!basePath) {
     logError([
@@ -58,11 +66,7 @@ export default async function setup(
 
   const gameSettings = GameConfig.get(appName).config
   if (!isWindows) {
-    const isWineOkToLaunch = await checkWineBeforeLaunch(
-      appName,
-      gameSettings,
-      logFileLocation(appName)
-    )
+    const isWineOkToLaunch = await checkWineBeforeLaunch(gameInfo, gameSettings)
 
     if (!isWineOkToLaunch) {
       logError(
@@ -76,12 +80,25 @@ export default async function setup(
   }
 
   logDebug(['PostInstall:', fuel.PostInstall], LogPrefix.Nile)
+
+  sendGameStatusUpdate({
+    appName,
+    runner: 'nile',
+    status: 'redist',
+    context: 'AMAZON'
+  })
+
   // Actual setup logic
   for (const action of fuel.PostInstall) {
     const exeArguments = action.Args ?? []
 
     if (isWindows) {
-      const command = ['Start-Process', '-FilePath', action.Command]
+      const command = [
+        '-NoProfile',
+        'Start-Process',
+        '-FilePath',
+        action.Command
+      ]
       if (exeArguments.length) {
         command.push('-ArgumentList', ...exeArguments)
       }
@@ -102,7 +119,7 @@ export default async function setup(
       gameInstallPath: basePath,
       commandParts: [action.Command, ...exeArguments],
       wait: true,
-      protonVerb: 'waitforexitandrun',
+      protonVerb: 'run',
       startFolder: basePath
     })
   }
