@@ -157,7 +157,8 @@
         "wineprefix": "Aukeratu Wine Prefix karpeta",
         "yes": "BAI",
         "dontShowAgain": "Ez erakutsi berriro",
-        "choose-nile-binary": "Hautatu Nile bitarra"
+        "choose-nile-binary": "Hautatu Nile bitarra",
+        "update": "Update"
     },
     "button": {
         "cancel": "Ezeztatu",
@@ -218,7 +219,8 @@
     "game": {
         "status": "Egoera",
         "store": "Denda",
-        "title": "Jokoaren izenburua"
+        "title": "Jokoaren izenburua",
+        "modify": "Aldatu Instalazioa"
     },
     "generic": {
         "error": {
@@ -239,7 +241,8 @@
         "show_available_games": "Show non-Available games",
         "show_favourites_only": "Erakutsi gogokoenak soilik",
         "show_hidden": "Erakutsi ezkutatutakoak",
-        "store": "Iragazi denda"
+        "store": "Iragazi denda",
+        "filters": "Iragazkiarekin"
     },
     "help": {
         "amdfsr": "AMD-ren FSR-k fotograma-tasa areagotzen laguntzen du pantaila osoko moduan bereizmen baxuagoak igoz. Irudiaren kalitatea 5etik 1era igotzen da errendimendu txiki baten truke. Gaitzeak errendimendua hobetu dezake.",
@@ -280,7 +283,11 @@
             "part1": "Heroikoek Wine, Proton eta CrossOver-en bertsioak bilatzen ditu karpeta hauetan:",
             "part2": "Beste leku batzuetarako, erabili karpeta horietako batera esteka sinboliko bat"
         },
-        "disable_logs": "Aktibatu kontrol-lauki hau erregistro-fitxategietako idazketa gehienak desgaitzeko (informazio kritikoa beti erregistratzen da). Ziurtatu ezarpen hau desaktibatu duzula edozein arazoren berri eman aurretik."
+        "disable_logs": "Aktibatu kontrol-lauki hau erregistro-fitxategietako idazketa gehienak desgaitzeko (informazio kritikoa beti erregistratzen da). Ziurtatu ezarpen hau desaktibatu duzula edozein arazoren berri eman aurretik.",
+        "title": {
+            "accessibility": "Erabilerraztasuna",
+            "downloadManager": "Download Manager"
+        }
     },
     "info": {
         "heroic": {
@@ -531,7 +538,10 @@
             "instructions_title": "Nola salatu arazo bat?",
             "last-log": "Azken erregistroa",
             "no-file": "Ez da aurkitu erregistro-fitxategirik",
-            "show-in-folder": "Erakutsi erregistro-fitxategia karpetan"
+            "show-in-folder": "Erakutsi erregistro-fitxategia karpetan",
+            "upload": {
+                "actions": "Action"
+            }
         },
         "mangohud": "Gaitu Mangohud (Mangohud instalatu behar da)",
         "manualsync": {
@@ -619,6 +629,18 @@
         "saves": {
             "label": "Gorde kokapena:",
             "warning": "Hodeiko Gordeen eginbidea beta-n dago. Sinkronizatu aurretik gordetako babeskopiak egin behar dira (zerbait gaizki gertatzen bada)"
+        },
+        "advanced": {
+            "details": "Xehetasunak",
+            "title": {
+                "resetHeroic": "Berrezarri Heroic"
+            },
+            "resetHeroic": {
+                "help": "Ziur zaude Heroic berrabiarazi nahi duzula? Horrek ezarpen guztiak eta cacheko biltegiratzea ezabatuko ditu, baina ez ditu zure instalatutako jokoak edo Epic-eko kredentzialak ezabatuko. Heroic-en bertsio eramangarriak (AppImage, WinPortable, ...) berrabiarazi egin behar dira."
+            },
+            "clearCache": {
+                "help9": "Game Settings"
+            }
         }
     },
     "Settings": "Ezarpenak",
@@ -702,5 +724,16 @@
     },
     "amazon": "Amazon",
     "Amazon Games": "Amazon Jokoak",
-    "prime-gaming": "Prime Gaming"
+    "prime-gaming": "Prime Gaming",
+    "winetricks": {
+        "install": "Install",
+        "loading": "Kargatzen"
+    },
+    "category-settings": {
+        "cancel": "Ezeztatu",
+        "warning": "Warning"
+    },
+    "window": {
+        "close": "Itxi"
+    }
 }

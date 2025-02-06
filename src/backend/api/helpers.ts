@@ -1,9 +1,8 @@
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, TitleBarOverlay } from 'electron'
 import {
   Runner,
   InstallPlatform,
   WineCommandArgs,
-  ConnectivityChangedCallback,
   ConnectivityStatus,
   AppSettings,
   GameSettings,
@@ -27,8 +26,6 @@ export const createNewWindow = (url: string) =>
 
 export const readConfig = async (file: 'library' | 'user') =>
   ipcRenderer.invoke('readConfig', file)
-
-export const getPlatform = async () => ipcRenderer.invoke('getPlatform')
 
 export const isLoggedIn = async () => ipcRenderer.invoke('isLoggedIn')
 
@@ -70,8 +67,23 @@ export const getGameInfo = async (appName: string, runner: Runner) =>
 export const getExtraInfo = async (appName: string, runner: Runner) =>
   ipcRenderer.invoke('getExtraInfo', appName, runner)
 
-export const getGOGLaunchOptions = async (appName: string) =>
-  ipcRenderer.invoke('getGOGLaunchOptions', appName)
+export const getLaunchOptions = async (appName: string, runner: Runner) =>
+  ipcRenderer.invoke('getLaunchOptions', appName, runner)
+
+export const getPrivateBranchPassword = async (appName: string) =>
+  ipcRenderer.invoke('getPrivateBranchPassword', appName)
+export const setPrivateBranchPassword = async (
+  appName: string,
+  password: string
+) => ipcRenderer.invoke('setPrivateBranchPassword', appName, password)
+
+// REDmod integration
+export const getAvailableCyberpunkMods = async () =>
+  ipcRenderer.invoke('getAvailableCyberpunkMods')
+export const setCyberpunModConfig = async (props: {
+  enabled: boolean
+  modsToLoad: string[]
+}) => ipcRenderer.invoke('setCyberpunkModConfig', props)
 
 export const getGameSettings = async (
   appName: string,
@@ -82,8 +94,18 @@ export const getGameSettings = async (
 export const getInstallInfo = async (
   appName: string,
   runner: Runner,
-  installPlatform: InstallPlatform
-) => ipcRenderer.invoke('getInstallInfo', appName, runner, installPlatform)
+  installPlatform: InstallPlatform,
+  build?: string,
+  branch?: string
+) =>
+  ipcRenderer.invoke(
+    'getInstallInfo',
+    appName,
+    runner,
+    installPlatform,
+    build,
+    branch
+  )
 
 export const runWineCommand = async (args: WineCommandArgs) =>
   ipcRenderer.invoke('runWineCommand', args)
@@ -92,7 +114,13 @@ export const runWineCommandForGame = async (args: RunWineCommandArgs) =>
   ipcRenderer.invoke('runWineCommandForGame', args)
 
 export const onConnectivityChanged = async (
-  callback: ConnectivityChangedCallback
+  callback: (
+    event: Electron.IpcRendererEvent,
+    status: {
+      status: ConnectivityStatus
+      retryIn: number
+    }
+  ) => void
 ) => ipcRenderer.on('connectivity-changed', callback)
 
 export const getConnectivityStatus = async () =>
@@ -111,6 +139,9 @@ export const getThemeCSS = async (theme: string) =>
   ipcRenderer.invoke('getThemeCSS', theme)
 
 export const getCustomThemes = async () => ipcRenderer.invoke('getCustomThemes')
+
+export const setTitleBarOverlay = (options: TitleBarOverlay) =>
+  ipcRenderer.send('setTitleBarOverlay', options)
 
 export const isGameAvailable = async (args: {
   appName: string

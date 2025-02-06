@@ -152,7 +152,8 @@
         },
         "default-steam-path": "Dampvej.",
         "dontShowAgain": "Vis ikke igen",
-        "choose-nile-binary": "Vælg Nile binær"
+        "choose-nile-binary": "Vælg Nile binær",
+        "update": "Opdater"
     },
     "All": "Alle",
     "accessibility": {
@@ -252,7 +253,11 @@
             "info": "Denne sti lader Heroic bestemme, hvilken version af Proton Steam bruger, til at tilføje ikke-Steam-spil til Steam."
         },
         "dxvkfpslimit": "Indstiller et billedhastighedsloft for DXVK-spil",
-        "disable_logs": "Slå dette afkrydsningsfelt TIL for at deaktivere de fleste skrivninger til logfiler (kritisk information logges altid). Sørg for at slå denne indstilling FRA, før du rapporterer et problem."
+        "disable_logs": "Slå dette afkrydsningsfelt TIL for at deaktivere de fleste skrivninger til logfiler (kritisk information logges altid). Sørg for at slå denne indstilling FRA, før du rapporterer et problem.",
+        "title": {
+            "accessibility": "Tilgængelighed",
+            "settings": "Indstillinger"
+        }
     },
     "notify": {
         "uninstalled": "Afinstalleret",
@@ -482,7 +487,13 @@
             "installing": "Installerer BattlEye Runtime...",
             "name": "BattlEye AntiCheat Runtime"
         },
-        "default_hint": "Ændringer i dette afsnit gælder kun som standardværdier ved installation af spil. Hvis du vil ændre indstillingerne for et allerede installeret spil, skal du bruge knappen Indstillinger på spilsiden."
+        "default_hint": "Ændringer i dette afsnit gælder kun som standardværdier ved installation af spil. Hvis du vil ændre indstillingerne for et allerede installeret spil, skal du bruge knappen Indstillinger på spilsiden.",
+        "advanced": {
+            "details": "detaljer",
+            "title": {
+                "resetHeroic": "Nulstil Heroic"
+            }
+        }
     },
     "title": {
         "allUnreal": "Uvirkeligt - Alt",
@@ -750,5 +761,8 @@
     },
     "amazon": "Amazon",
     "Amazon Games": "Amazon spil",
-    "prime-gaming": "Prime Gaming"
+    "prime-gaming": "Prime Gaming",
+    "winetricks": {
+        "install": "Installer"
+    }
 }

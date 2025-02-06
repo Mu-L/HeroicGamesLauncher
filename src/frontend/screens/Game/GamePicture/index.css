@@ -27,6 +27,7 @@
 }
 
 .gamePicture > .gameImg {
+  min-height: 250px;
   height: 100%;
   width: 100%;
   border-radius: 0;
@@ -35,7 +36,9 @@
 
 .gamePicture > .gameLogo {
   position: absolute;
-  bottom: 0;
-  width: 70%;
-  min-width: 140px;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  z-index: 2;
 }

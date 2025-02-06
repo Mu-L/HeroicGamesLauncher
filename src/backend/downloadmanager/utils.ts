@@ -1,11 +1,18 @@
 import { gameManagerMap } from 'backend/storeManagers'
 import { logError, LogPrefix, logWarning } from '../logger/logger'
-import { isEpicServiceOffline } from '../utils'
-import { DMStatus, InstallParams } from 'common/types'
+import {
+  downloadFile,
+  isEpicServiceOffline,
+  sendGameStatusUpdate
+} from '../utils'
+import { DMStatus, InstallParams, Runner } from 'common/types'
 import i18next from 'i18next'
 import { notify, showDialogBoxModalAuto } from '../dialog/dialog'
 import { isOnline } from '../online_monitor'
-import { sendFrontendMessage } from '../main_window'
+import { fixesPath, gogdlConfigPath, isWindows } from 'backend/constants'
+import pathModule from 'path'
+import { existsSync, mkdirSync, rmSync } from 'graceful-fs'
+import { storeMap } from 'common/utils'
 
 async function installQueueElement(params: InstallParams): Promise<{
   status: DMStatus
@@ -18,7 +25,9 @@ async function installQueueElement(params: InstallParams): Promise<{
     sdlList = [],
     runner,
     installLanguage,
-    platformToInstall
+    platformToInstall,
+    build,
+    branch
   } = params
   const { title } = gameManagerMap[runner].getGameInfo(appName)
 
@@ -45,7 +54,14 @@ async function installQueueElement(params: InstallParams): Promise<{
     }
   }
 
-  sendFrontendMessage('gameStatusUpdate', {
+  if (runner === 'gog') {
+    // Sometimes, a game manifest file already exists and that makes the installation
+    // end as soon as it's started. We have to delete the file to prevent that issue.
+    const manifestPath = pathModule.join(gogdlConfigPath, 'manifests', appName)
+    if (existsSync(manifestPath)) rmSync(manifestPath)
+  }
+
+  sendGameStatusUpdate({
     appName,
     runner,
     status: 'installing',
@@ -65,12 +81,18 @@ async function installQueueElement(params: InstallParams): Promise<{
   }
 
   try {
+    if (!isWindows) {
+      downloadFixesFor(appName, runner)
+    }
+
     const { status, error } = await gameManagerMap[runner].install(appName, {
       path: path.replaceAll("'", ''),
       installDlcs,
-      sdlList,
+      sdlList: sdlList.filter((el) => el !== ''),
       platformToInstall,
-      installLanguage
+      installLanguage,
+      build,
+      branch
     })
 
     if (status === 'error') {
@@ -82,7 +104,7 @@ async function installQueueElement(params: InstallParams): Promise<{
     errorMessage(`${error}`)
     return { status: 'error' }
   } finally {
-    sendFrontendMessage('gameStatusUpdate', {
+    sendGameStatusUpdate({
       appName,
       runner,
       status: 'done'
@@ -120,7 +142,7 @@ async function updateQueueElement(params: InstallParams): Promise<{
     }
   }
 
-  sendFrontendMessage('gameStatusUpdate', {
+  sendGameStatusUpdate({
     appName,
     runner,
     status: 'updating'
@@ -139,7 +161,13 @@ async function updateQueueElement(params: InstallParams): Promise<{
   }
 
   try {
-    const { status } = await gameManagerMap[runner].update(appName)
+    const { status } = await gameManagerMap[runner].update(appName, {
+      build: params.build,
+      branch: params.branch,
+      language: params.installLanguage,
+      dlcs: params.installDlcs,
+      dependencies: params.dependencies
+    })
 
     if (status === 'error') {
       errorMessage('')
@@ -150,12 +178,21 @@ async function updateQueueElement(params: InstallParams): Promise<{
     errorMessage(`${error}`)
     return { status: 'error' }
   } finally {
-    sendFrontendMessage('gameStatusUpdate', {
+    sendGameStatusUpdate({
       appName,
       runner,
       status: 'done'
     })
   }
+}
+
+async function downloadFixesFor(appName: string, runner: Runner) {
+  const url = `https://raw.githubusercontent.com/Heroic-Games-Launcher/known-fixes/main/${storeMap[runner]}/${appName}-${storeMap[runner]}.json`
+  const dest = pathModule.join(fixesPath, `${appName}-${storeMap[runner]}.json`)
+  if (!existsSync(fixesPath)) {
+    mkdirSync(fixesPath, { recursive: true })
+  }
+  downloadFile({ url, dest, ignoreFailure: true })
 }
 
 export { installQueueElement, updateQueueElement }

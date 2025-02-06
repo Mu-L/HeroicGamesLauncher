@@ -12,10 +12,6 @@ import {
   logInfo,
   logWarning
 } from 'backend/logger/logger'
-import {
-  createAbortController,
-  deleteAbortController
-} from 'backend/utils/aborthandler/aborthandler'
 import { CallRunnerOptions, ExecResult, GameInfo } from 'common/types'
 import {
   FuelSchema,
@@ -32,6 +28,7 @@ import { dirname, join } from 'path'
 import { app } from 'electron'
 import { copySync } from 'fs-extra'
 import { NileUser } from './user'
+import { runNileCommandStub } from './e2eMock'
 
 const installedGames: Map<string, NileInstallMetadataInfo> = new Map()
 const library: Map<string, GameInfo> = new Map()
@@ -61,7 +58,15 @@ function loadGamesInAccount() {
     const { product } = game
     const { title, productDetail } = product
     const {
-      details: { shortDescription, developer },
+      details: {
+        shortDescription,
+        developer,
+        genres,
+        releaseDate,
+        backgroundUrl1,
+        backgroundUrl2,
+        logoUrl
+      },
       iconUrl
     } = productDetail
 
@@ -70,7 +75,9 @@ function loadGamesInAccount() {
     const safeFolderName = removeSpecialcharacters(title ?? '')
     library.set(product.id, {
       app_name: product.id,
-      art_cover: iconUrl,
+      art_cover: backgroundUrl2 || iconUrl,
+      art_logo: logoUrl,
+      art_background: backgroundUrl1 || backgroundUrl2,
       art_square: iconUrl,
       canRunOffline: true, // Amazon Games only has offline games
       install: info
@@ -89,6 +96,11 @@ function loadGamesInAccount() {
       title: title ?? '???',
       description: shortDescription,
       developer,
+      extra: {
+        reqs: [],
+        genres,
+        releaseDate
+      },
       is_linux_native: false,
       is_mac_native: false
     })
@@ -159,12 +171,18 @@ export async function listUpdateableGames(): Promise<string[]> {
   }
   logInfo('Looking for updates...', LogPrefix.Nile)
 
-  const abortID = 'nile-list-updates'
   const { stdout: output } = await runRunnerCommand(
     ['list-updates', '--json'],
-    createAbortController(abortID)
+    { abortId: 'nile-list-updates' }
   )
-  deleteAbortController(abortID)
+
+  if (!output) {
+    /*
+     * Nothing installed: nothing to update, output will be empty and JSON.parse can't
+     * handle empty strings (they aren't proper JSON).
+     */
+    return []
+  }
 
   const updates: string[] = JSON.parse(output)
   if (updates.length) {
@@ -179,13 +197,9 @@ export async function listUpdateableGames(): Promise<string[]> {
 async function refreshNile(): Promise<ExecResult> {
   logInfo('Refreshing Amazon Games...', LogPrefix.Nile)
 
-  const abortID = 'nile-refresh'
-  const res = await runRunnerCommand(
-    ['library', 'sync'],
-    createAbortController(abortID)
-  )
-
-  deleteAbortController(abortID)
+  const res = await runRunnerCommand(['library', 'sync'], {
+    abortId: 'nile-refresh'
+  })
 
   if (res.error) {
     logError(['Failed to refresh library:', res.error], LogPrefix.Nile)
@@ -320,9 +334,8 @@ export async function getInstallInfo(
     // Get size info from Nile
     const { stdout: output } = await runRunnerCommand(
       ['install', '--info', '--json', appName],
-      createAbortController(appName)
+      { abortId: appName }
     )
-    deleteAbortController(appName)
 
     const { download_size }: NileGameDownloadInfo = JSON.parse(output)
     const installInfo = {
@@ -452,28 +465,39 @@ export function installState(appName: string, state: boolean) {
 
 export async function runRunnerCommand(
   commandParts: string[],
-  abortController: AbortController,
   options?: CallRunnerOptions
 ): Promise<ExecResult> {
+  if (process.env.CI === 'e2e') {
+    return runNileCommandStub(commandParts)
+  }
+
   const { dir, bin } = getNileBin()
 
-  // Set XDG_CONFIG_HOME to a custom, Heroic-specific location so user-made
-  // changes to Legendary's main config file don't affect us
+  // Set NILE_CONFIG_PATH to a custom, Heroic-specific location so user-made
+  // changes to Nile's main config file don't affect us
   if (!options) {
     options = {}
   }
   if (!options.env) {
     options.env = {}
   }
-  options.env.XDG_CONFIG_HOME = dirname(nileConfigPath)
+  options.env.NILE_CONFIG_PATH = dirname(nileConfigPath)
 
   return callRunner(
     commandParts,
     { name: 'nile', logPrefix: LogPrefix.Nile, bin, dir },
-    abortController,
     {
       ...options,
       verboseLogFile: nileLogFile
     }
+  )
+}
+
+export const getLaunchOptions = () => []
+
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+export function changeVersionPinnedStatus(appName: string, status: boolean) {
+  logWarning(
+    'changeVersionPinnedStatus not implemented on Nile Library Manager'
   )
 }

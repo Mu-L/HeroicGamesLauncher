@@ -1,5 +1,5 @@
 import { spawnSync } from 'child_process'
-import { homedir, platform } from 'os'
+import { homedir } from 'os'
 import { join, resolve } from 'path'
 import { parse } from '@node-steam/vdf'
 
@@ -11,6 +11,7 @@ import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync } from 'graceful-fs'
 import { GlobalConfig } from './config'
 import { TypeCheckedStoreBackend } from './electron_store'
+import { dirSync } from 'tmp'
 
 const configStore = new TypeCheckedStoreBackend('configStore', {
   cwd: 'store'
@@ -26,38 +27,53 @@ const fontsStore = new TypeCheckedStoreBackend('fontsStore', {
   name: 'fonts'
 })
 
-const isMac = platform() === 'darwin'
-const isWindows = platform() === 'win32'
-const isLinux = platform() === 'linux'
+const isMac = process.platform === 'darwin'
+const isWindows = process.platform === 'win32'
+const isLinux = process.platform === 'linux'
 const isSteamDeckGameMode = process.env.XDG_CURRENT_DESKTOP === 'gamescope'
 const isCLIFullscreen = process.argv.includes('--fullscreen')
 const isCLINoGui = process.argv.includes('--no-gui')
 const isFlatpak = Boolean(env.FLATPAK_ID)
+const isSnap = Boolean(env.SNAP)
 const currentGameConfigVersion: GameConfigVersion = 'v0'
 const currentGlobalConfigVersion: GlobalConfigVersion = 'v0'
 
 const flatPakHome = env.XDG_DATA_HOME?.replace('/data', '') || homedir()
-const userHome = homedir()
-const configFolder = app.getPath('appData')
+const userHome = isSnap ? env.SNAP_REAL_HOME! : homedir()
+let configFolder = app.getPath('appData')
+// If we're running tests, we want a config folder independent of the normal
+// user configuration
+if (process.env.CI === 'e2e') {
+  const temp_dir = dirSync({ unsafeCleanup: true })
+  logDebug(
+    `CI is set to "e2e", storing Heroic config files in ${temp_dir.name}`
+  )
+  configFolder = temp_dir.name
+  mkdirSync(join(configFolder, 'heroic'))
+}
+
 const appFolder = join(configFolder, 'heroic')
-const legendaryConfigPath = join(appFolder, 'legendaryConfig', 'legendary')
+const legendaryConfigPath = isSnap
+  ? join(env.XDG_CONFIG_HOME!, 'legendary')
+  : join(appFolder, 'legendaryConfig', 'legendary')
+const gogdlConfigPath = join(appFolder, 'gogdlConfig', 'heroic_gogdl')
+const gogSupportPath = join(gogdlConfigPath, 'gog-support')
 const nileConfigPath = join(appFolder, 'nile_config', 'nile')
 const configPath = join(appFolder, 'config.json')
 const gamesConfigPath = join(appFolder, 'GamesConfig')
 const toolsPath = join(appFolder, 'tools')
+const epicRedistPath = join(toolsPath, 'redist', 'legendary')
+const gogRedistPath = join(toolsPath, 'redist', 'gog')
 const heroicIconFolder = join(appFolder, 'icons')
 const runtimePath = join(toolsPath, 'runtimes')
+const defaultUmuPath = join(runtimePath, 'umu', 'umu_run.py')
 const userInfo = join(legendaryConfigPath, 'user.json')
-const heroicInstallPath = join(homedir(), 'Games', 'Heroic')
-const defaultWinePrefixDir = join(homedir(), 'Games', 'Heroic', 'Prefixes')
+const heroicInstallPath = join(userHome, 'Games', 'Heroic')
+const defaultWinePrefixDir = join(userHome, 'Games', 'Heroic', 'Prefixes')
 const defaultWinePrefix = join(defaultWinePrefixDir, 'default')
 const anticheatDataPath = join(appFolder, 'areweanticheatyet.json')
 const imagesCachePath = join(appFolder, 'images-cache')
-const cachedUbisoftInstallerPath = join(
-  appFolder,
-  'tools',
-  'UbisoftConnectInstaller.exe'
-)
+const fixesPath = join(appFolder, 'fixes')
 
 const {
   currentLogFile,
@@ -67,15 +83,23 @@ const {
   nileLogFile
 } = createNewLogFileAndClearOldOnes()
 
-const publicDir = resolve(__dirname, '..', app.isPackaged ? '' : '../public')
+const publicDir = resolve(
+  __dirname,
+  '..',
+  app.isPackaged || process.env.CI === 'e2e' ? '' : '../public'
+)
 const gogdlAuthConfig = join(app.getPath('userData'), 'gog_store', 'auth.json')
 const vulkanHelperBin = fixAsarPath(
-  join(publicDir, 'bin', process.platform, 'vulkan-helper')
+  join(publicDir, 'bin', process.arch, process.platform, 'vulkan-helper')
 )
 const icon = fixAsarPath(join(publicDir, 'icon.png'))
 const iconDark = fixAsarPath(join(publicDir, 'icon-dark.png'))
 const iconLight = fixAsarPath(join(publicDir, 'icon-light.png'))
 const installed = join(legendaryConfigPath, 'installed.json')
+const thirdPartyInstalled = join(
+  legendaryConfigPath,
+  'third-party-installed.json'
+)
 const legendaryMetadata = join(legendaryConfigPath, 'metadata')
 const nileInstalled = join(nileConfigPath, 'installed.json')
 const nileLibrary = join(nileConfigPath, 'library.json')
@@ -170,9 +194,7 @@ export async function getSteamLibraries(): Promise<string[]> {
     if (!json.libraryfolders) {
       return libraries
     }
-    const folders = Object.values(json.libraryfolders) as Array<{
-      path: string
-    }>
+    const folders: { path: string }[] = Object.values(json.libraryfolders)
     return [...libraries, ...folders.map((folder) => folder.path)].filter(
       (path) => existsSync(path)
     )
@@ -200,7 +222,7 @@ const necessaryFoldersByPlatform = {
 }
 
 export function createNecessaryFolders() {
-  necessaryFoldersByPlatform[platform()].forEach((folder: string) => {
+  necessaryFoldersByPlatform[process.platform].forEach((folder: string) => {
     if (!existsSync(folder)) {
       mkdirSync(folder)
     }
@@ -237,6 +259,7 @@ export {
   iconLight,
   installed,
   isFlatpak,
+  isSnap,
   isMac,
   isWindows,
   isLinux,
@@ -254,17 +277,23 @@ export {
   fontsStore,
   isSteamDeckGameMode,
   runtimePath,
+  defaultUmuPath,
   isCLIFullscreen,
   isCLINoGui,
   publicDir,
   GITHUB_API,
   wineprefixFAQ,
   customThemesWikiLink,
-  cachedUbisoftInstallerPath,
   gogdlAuthConfig,
+  gogdlConfigPath,
+  gogSupportPath,
+  gogRedistPath,
+  epicRedistPath,
   vulkanHelperBin,
   nileConfigPath,
   nileInstalled,
   nileLibrary,
-  nileUserData
+  nileUserData,
+  fixesPath,
+  thirdPartyInstalled
 }

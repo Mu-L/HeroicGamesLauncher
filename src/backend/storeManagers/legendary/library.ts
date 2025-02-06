@@ -1,15 +1,12 @@
-import {
-  createAbortController,
-  deleteAbortController
-} from '../../utils/aborthandler/aborthandler'
-import { existsSync, readFileSync, readdirSync } from 'graceful-fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'graceful-fs'
 
 import {
   GameInfo,
   InstalledInfo,
   CallRunnerOptions,
   ExecResult,
-  InstallPlatform
+  InstallPlatform,
+  LaunchOption
 } from 'common/types'
 import {
   InstalledJsonMetadata,
@@ -25,7 +22,8 @@ import {
   formatEpicStoreUrl,
   getLegendaryBin,
   isEpicServiceOffline,
-  getFileSize
+  getFileSize,
+  axiosClient
 } from '../../utils'
 import {
   fallBackImage,
@@ -33,7 +31,8 @@ import {
   legendaryLogFile,
   legendaryMetadata,
   isLinux,
-  userHome
+  userHome,
+  isWindows
 } from '../../constants'
 import {
   logDebug,
@@ -51,9 +50,15 @@ import { callRunner } from '../../launcher'
 import { dirname, join } from 'path'
 import { isOnline } from 'backend/online_monitor'
 import { update } from './games'
-import axios from 'axios'
 import { app } from 'electron'
 import { copySync } from 'fs-extra'
+import { LegendaryCommand } from './commands'
+import { LegendaryAppName, LegendaryPlatform } from './commands/base'
+import { Path } from 'backend/schemas'
+import shlex from 'shlex'
+import thirdParty from './thirdParty'
+import { Entries } from 'type-fest'
+import { runLegendaryCommandStub } from './e2eMock'
 
 const allGames: Set<string> = new Set()
 let installedGames: Map<string, InstalledJsonMetadata> = new Map()
@@ -65,9 +70,8 @@ export async function initLegendaryLibraryManager() {
     ? join(app.getPath('appData'), 'legendary')
     : join(userHome, '.config', 'legendary')
   if (!existsSync(legendaryConfigPath) && existsSync(globalLegendaryConfig)) {
-    copySync(globalLegendaryConfig, legendaryConfigPath, {
-      recursive: true
-    })
+    mkdirSync(legendaryConfigPath, { recursive: true })
+    copySync(globalLegendaryConfig, legendaryConfigPath)
   }
 
   loadGamesInAccount()
@@ -105,13 +109,15 @@ async function refreshLegendary(): Promise<ExecResult> {
     return { stderr: 'Epic offline, unable to update game list', stdout: '' }
   }
 
-  const abortID = 'legendary-refresh'
   const res = await runRunnerCommand(
-    ['list', '--third-party'],
-    createAbortController(abortID)
+    {
+      subcommand: 'list',
+      '--third-party': true
+    },
+    {
+      abortId: 'legendary-refresh'
+    }
   )
-
-  deleteAbortController(abortID)
 
   if (res.error) {
     logError(['Failed to refresh library:', res.error], LogPrefix.Legendary)
@@ -125,10 +131,12 @@ async function refreshLegendary(): Promise<ExecResult> {
  */
 export function refreshInstalled() {
   const installedJSON = join(legendaryConfigPath, 'installed.json')
+
+  let installedCache: [string, InstalledJsonMetadata][] = []
   if (existsSync(installedJSON)) {
     try {
-      installedGames = new Map(
-        Object.entries(JSON.parse(readFileSync(installedJSON, 'utf-8')))
+      installedCache = Object.entries(
+        JSON.parse(readFileSync(installedJSON, 'utf-8'))
       )
     } catch (error) {
       // disabling log here because its giving false positives on import command
@@ -136,11 +144,16 @@ export function refreshInstalled() {
         ['Corrupted installed.json file, cannot load installed games', error],
         LogPrefix.Legendary
       )
-      installedGames = new Map()
+      installedCache = []
     }
   } else {
-    installedGames = new Map()
+    installedCache = []
   }
+
+  const thirdPartyGames = thirdParty.getInstalledGames()
+  installedCache.push(...thirdPartyGames)
+
+  installedGames = new Map(installedCache)
 }
 
 const defaultExecResult = {
@@ -159,7 +172,7 @@ export async function refresh(): Promise<ExecResult | null> {
     return defaultExecResult
   }
 
-  refreshLegendary()
+  await refreshLegendary()
   loadGamesInAccount()
   refreshInstalled()
 
@@ -201,7 +214,7 @@ export function getGameInfo(
   }
   // We have the game, but info wasn't loaded yet
   if (!library.has(appName) || forceReload) {
-    loadFile(appName + '.json')
+    loadFile(appName)
   }
   return library.get(appName)
 }
@@ -211,35 +224,53 @@ export function getGameInfo(
  */
 export async function getInstallInfo(
   appName: string,
-  installPlatform: InstallPlatform
+  installPlatform: InstallPlatform,
+  options?: { retries?: number }
 ): Promise<LegendaryInstallInfo> {
+  const retries = options?.retries
+
   const cache = installStore.get(appName)
-  if (cache) {
+  if (cache && cache.manifest) {
     logDebug('Using cached install info', LogPrefix.Legendary)
     return cache
   }
 
   logInfo(`Getting more details with 'legendary info'`, LogPrefix.Legendary)
-  const res = await runRunnerCommand(
-    [
-      'info',
-      appName,
-      ...(installPlatform ? ['--platform', installPlatform] : []),
-      '--json',
-      (await isEpicServiceOffline()) ? '--offline' : ''
-    ],
-    createAbortController(appName)
-  )
-
-  deleteAbortController(appName)
+  const command: LegendaryCommand = {
+    subcommand: 'info',
+    appName: LegendaryAppName.parse(appName),
+    '--json': true,
+    '--platform': LegendaryPlatform.parse(installPlatform)
+  }
+  if (await isEpicServiceOffline()) {
+    command['--offline'] = true
+  }
+  const res = await runRunnerCommand(command, { abortId: appName })
 
   if (res.error) {
     logError(['Failed to get more details:', res.error], LogPrefix.Legendary)
   }
   try {
     const info: LegendaryInstallInfo = JSON.parse(res.stdout)
-    installStore.set(appName, info)
-    return info
+    if (info.manifest) {
+      installStore.set(appName, info)
+      return info
+    } else {
+      const nextRetry = retries !== undefined ? retries - 1 : 3
+      if (nextRetry > 0) {
+        logWarning(
+          `Install info for ${appName} does not include manifest data. Retrying.`
+        )
+        const retriedInfo = await getInstallInfo(appName, installPlatform, {
+          retries: nextRetry
+        })
+        return retriedInfo
+      } else {
+        throw Error(
+          `Install info for ${appName} does not include manifest data after 3 retries.`
+        )
+      }
+    }
   } catch (error) {
     throw Error(`Failed to parse install info for ${appName} with: ${error}`)
   }
@@ -265,16 +296,13 @@ export async function listUpdateableGames(): Promise<string[]> {
     return []
   }
 
-  const abortID = 'legendary-check-updates'
   const res = await runRunnerCommand(
-    ['list', '--third-party'],
-    createAbortController(abortID),
+    { subcommand: 'list', '--third-party': true },
     {
+      abortId: 'legendary-check-updates',
       logMessagePrefix: 'Checking for game updates'
     }
   )
-
-  deleteAbortController(abortID)
 
   if (res.abort) {
     return []
@@ -422,11 +450,16 @@ export async function changeGameInstallPath(appName: string, newPath: string) {
   }
 
   const { error } = await runRunnerCommand(
-    ['move', appName, dirname(newPath), '--skip-move'],
-    createAbortController(appName)
+    {
+      subcommand: 'move',
+      appName: LegendaryAppName.parse(appName),
+      newBasePath: Path.parse(dirname(newPath)),
+      '--skip-move': true
+    },
+    {
+      abortId: appName
+    }
   )
-
-  deleteAbortController(appName)
 
   if (error) {
     logError(
@@ -446,7 +479,7 @@ export function installState(appName: string, state: boolean) {
   if (state) {
     // This assumes that fileName and appName are same.
     // If that changes, this will break.
-    loadFile(`${appName}.json`)
+    loadFile(appName)
   } else {
     // @ts-expect-error TODO: Make sure game info is loaded & appName is valid here
     library.get(appName).is_installed = false
@@ -456,28 +489,36 @@ export function installState(appName: string, state: boolean) {
   }
 }
 
+function loadGameMetadata(appName: string): GameMetadata {
+  const fullPath = join(legendaryMetadata, appName + '.json')
+  return JSON.parse(readFileSync(fullPath, 'utf-8'))
+}
+
 /**
  * Load the file completely into our in-memory library.
  * Largely derived from legacy code.
  *
  * @returns True/False, whether or not the file was loaded
  */
-function loadFile(fileName: string): boolean {
-  const fullPath = join(legendaryMetadata, fileName)
-
-  let app_name: string
+function loadFile(app_name: string): boolean {
   let metadata
   try {
-    const data: GameMetadata = JSON.parse(readFileSync(fullPath, 'utf-8'))
-    app_name = data.app_name
+    const data = loadGameMetadata(app_name)
     metadata = data.metadata
   } catch (error) {
-    logError(['Failed to parse', fileName], LogPrefix.Legendary)
+    logError(['Failed to parse metadata for', app_name], LogPrefix.Legendary)
     return false
   }
   const { namespace } = metadata
 
-  if (namespace === 'ue') {
+  const ueCategories = ['assets', 'asset-format', 'plugins', 'projects']
+  const isUeTitle =
+    namespace === 'ue' ||
+    !!metadata.categories.find((category) =>
+      ueCategories.includes(category.path)
+    )
+
+  if (isUeTitle) {
     return false
   }
 
@@ -500,10 +541,7 @@ function loadFile(fileName: string): boolean {
   }
 
   if (!customAttributes) {
-    logWarning(
-      ['Incomplete metadata for', fileName, app_name],
-      LogPrefix.Legendary
-    )
+    logWarning(['Incomplete metadata for', app_name], LogPrefix.Legendary)
   }
 
   const dlcs: string[] = []
@@ -556,10 +594,7 @@ function loadFile(fileName: string): boolean {
   const convertedSize = install_size ? getFileSize(Number(install_size)) : '0'
 
   if (releaseInfo && !releaseInfo[0].platform) {
-    logWarning(
-      ['No platforms info for', fileName, app_name],
-      LogPrefix.Legendary
-    )
+    logWarning(['No platforms info for', app_name], LogPrefix.Legendary)
   }
 
   let metadataPlatform: LegendaryInstallPlatform[] = []
@@ -604,6 +639,9 @@ function loadFile(fileName: string): boolean {
     title,
     canRunOffline,
     thirdPartyManagedApp,
+    isEAManaged:
+      !!thirdPartyManagedApp &&
+      ['origin', 'the ea app'].includes(thirdPartyManagedApp.toLowerCase()),
     is_linux_native: false,
     runner: 'legendary',
     store_url: formatEpicStoreUrl(title)
@@ -621,7 +659,7 @@ async function loadAll(): Promise<string[]> {
   if (existsSync(legendaryMetadata)) {
     const loadedFiles: string[] = []
     allGames.forEach((appName) => {
-      const wasLoaded = loadFile(appName + '.json')
+      const wasLoaded = loadFile(appName)
       if (wasLoaded) {
         loadedFiles.push(appName)
       }
@@ -639,13 +677,16 @@ async function loadAll(): Promise<string[]> {
 export const hasGame = (appName: string) => allGames.has(appName)
 
 export async function runRunnerCommand(
-  commandParts: string[],
-  abortController: AbortController,
+  command: LegendaryCommand,
   options?: CallRunnerOptions
 ): Promise<ExecResult> {
+  if (process.env.CI === 'e2e') {
+    return runLegendaryCommandStub(command)
+  }
+
   const { dir, bin } = getLegendaryBin()
 
-  // Set XDG_CONFIG_HOME to a custom, Heroic-specific location so user-made
+  // Set LEGENDARY_CONFIG_PATH to a custom, Heroic-specific location so user-made
   // changes to Legendary's main config file don't affect us
   if (!options) {
     options = {}
@@ -653,12 +694,17 @@ export async function runRunnerCommand(
   if (!options.env) {
     options.env = {}
   }
-  options.env.XDG_CONFIG_HOME = dirname(legendaryConfigPath)
+
+  // if not on a SNAP environment, set the XDG_CONFIG_HOME to the same location as the config file
+  if (!process.env.SNAP) {
+    options.env.LEGENDARY_CONFIG_PATH = legendaryConfigPath
+  }
+
+  const commandParts = commandToArgsArray(command)
 
   return callRunner(
     commandParts,
     { name: 'legendary', logPrefix: LogPrefix.Legendary, bin, dir },
-    abortController,
     {
       ...options,
       verboseLogFile: legendaryLogFile
@@ -673,7 +719,7 @@ export async function getGameOverride(): Promise<GameOverride> {
   }
 
   try {
-    const response = await axios.get<ResponseDataLegendaryAPI>(
+    const response = await axiosClient.get<ResponseDataLegendaryAPI>(
       'https://heroic.legendary.gl/v1/version.json'
     )
 
@@ -692,7 +738,7 @@ export async function getGameSdl(
   appName: string
 ): Promise<SelectiveDownload[]> {
   try {
-    const response = await axios.get<Record<string, SelectiveDownload>>(
+    const response = await axiosClient.get<Record<string, SelectiveDownload>>(
       `https://heroic.legendary.gl/v1/sdl/${appName}.json`
     )
 
@@ -709,9 +755,7 @@ export async function getGameSdl(
     const sdlList: SelectiveDownload[] = []
 
     list.forEach((key) => {
-      const { name, description, tags } = response.data[
-        key
-      ] as SelectiveDownload
+      const { name, description, tags } = response.data[key]
       if (key === '__required') {
         sdlList.unshift({ name, description, tags, required: true })
       } else {
@@ -727,4 +771,176 @@ export async function getGameSdl(
     )
     return []
   }
+}
+
+/**
+ * Toggles the EGL synchronization on/off based on arguments
+ * @param path_or_action On Windows: "unlink" (turn off), "windows" (turn on). On linux/mac: "unlink" (turn off), any other string (prefix path)
+ * @returns string with stdout + stderr, or error message
+ */
+export async function toggleGamesSync(path_or_action: string) {
+  if (isWindows) {
+    const egl_manifestPath =
+      'C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests'
+
+    if (!existsSync(egl_manifestPath)) {
+      mkdirSync(egl_manifestPath, { recursive: true })
+    }
+  }
+
+  const command: LegendaryCommand = {
+    subcommand: 'egl-sync',
+    '-y': true
+  }
+
+  if (path_or_action === 'unlink') {
+    command['--unlink'] = true
+  } else {
+    command['--enable-sync'] = true
+    if (!isWindows) {
+      const pathParse = Path.safeParse(path_or_action)
+      if (pathParse.success) {
+        command['--egl-wine-prefix'] = pathParse.data
+      } else {
+        return 'Error'
+      }
+    }
+  }
+
+  const { error, stderr, stdout } = await runRunnerCommand(command, {
+    abortId: 'toggle-sync'
+  })
+
+  if (error) {
+    logError(['Failed to toggle EGS-Sync', error], LogPrefix.Legendary)
+    return 'Error'
+  } else {
+    logInfo(`${stdout}`, LogPrefix.Legendary)
+    if (stderr.includes('ERROR') || stderr.includes('error')) {
+      logError(`${stderr}`, LogPrefix.Legendary)
+      return 'Error'
+    }
+    return `${stdout} - ${stderr}`
+  }
+}
+
+/*
+ * Converts a LegendaryCommand to a parameter list passable to Legendary
+ * @param command
+ */
+export function commandToArgsArray(command: LegendaryCommand): string[] {
+  const commandParts: string[] = []
+
+  if (command.subcommand) commandParts.push(command.subcommand)
+
+  // Some commands need special handling
+  switch (command.subcommand) {
+    case 'install':
+      commandParts.push(command.appName)
+      if (command.sdlList) {
+        commandParts.push('--install-tag=')
+        for (const sdlTag of command.sdlList)
+          commandParts.push('--install-tag', sdlTag)
+      }
+      break
+    case 'launch':
+      commandParts.push(command.appName)
+      if (command.extraArguments)
+        commandParts.push(...shlex.split(command.extraArguments))
+      break
+    case 'update':
+    case 'info':
+    case 'sync-saves':
+    case 'uninstall':
+    case 'repair':
+      commandParts.push(command.appName)
+      break
+    case 'move':
+      commandParts.push(command.appName, command.newBasePath)
+      break
+    case 'eos-overlay':
+      commandParts.push(command.action)
+      break
+    case 'import':
+      commandParts.push(command.appName, command.installationDirectory)
+      break
+  }
+
+  // Append parameters (anything starting with -)
+  for (const [parameter, value] of Object.entries(
+    command
+  ) as Entries<LegendaryCommand>) {
+    if (!parameter.startsWith('-')) continue
+    if (!value) continue
+    // Boolean values (specifically `true`) have to be handled differently
+    // Parameters that have a boolean type are just signified
+    // by the parameter being present, they don't have a value.
+    // Thus, we only add the key (parameter) here, instead of the key & value
+    if (value === true) commandParts.push(parameter)
+    else commandParts.push(parameter, value.toString())
+  }
+
+  return commandParts
+}
+
+export async function getLaunchOptions(
+  appName: string
+): Promise<LaunchOption[]> {
+  const gameInfo = getGameInfo(appName)
+  const installPlatform = gameInfo?.install.platform
+  if (!installPlatform || gameInfo.thirdPartyManagedApp) return []
+
+  const installInfo = await getInstallInfo(appName, installPlatform)
+  const launchOptions: LaunchOption[] = installInfo.game.launch_options
+
+  // Some DLCs are also launch-able
+  for (const dlc of installInfo.game.owned_dlc) {
+    const installedInfo = installedGames.get(dlc.app_name)
+    if (!installedInfo) continue
+
+    // If the DLC itself is executable, push it onto the list
+    if (installedInfo.executable) {
+      launchOptions.push({
+        type: 'dlc',
+        dlcAppName: dlc.app_name,
+        dlcTitle: dlc.title
+      })
+      // The one example we've found using this (Unreal Editor for Fortnite)
+      // suggests that we should not look at the AdditionalCommandLine custom
+      // attribute (below) if this is set
+      continue
+    }
+
+    // Otherwise, if it specifies additional commandline parameters to pass to
+    // the main game, add it as a basic launch option
+    let metadata
+    try {
+      metadata = loadGameMetadata(dlc.app_name)
+    } catch (e) {
+      logWarning(
+        [
+          'Failed to load DLC metadata for',
+          dlc.app_name,
+          '(base game is',
+          `${appName})`
+        ],
+        LogPrefix.Legendary
+      )
+    }
+    if (!metadata?.metadata.customAttributes?.AdditionalCommandLine) continue
+    launchOptions.push({
+      type: 'basic',
+      name: dlc.title,
+      parameters: metadata.metadata.customAttributes.AdditionalCommandLine.value
+    })
+  }
+
+  return launchOptions
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+export function changeVersionPinnedStatus(appName: string, status: boolean) {
+  logWarning(
+    'changeVersionPinnedStatus not implemented on Legendary Library Manager'
+  )
 }

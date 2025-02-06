@@ -152,12 +152,18 @@
             "wine-change": {
                 "message": "Chúng tôi không thể tìm thấy phiên bản rượu đã chọn để khởi chạy tựa game này ({{selectedWine}}). {{newline}} Chúng tôi đã tìm thấy một cái khác, bạn có muốn tiếp tục khởi chạy bằng {{foundWine}} không?",
                 "title": "Rượu không tìm thấy!"
+            },
+            "sideload": {
+                "confirmExit": {
+                    "title": "Xác nhận đăng xuất?"
+                }
             }
         },
         "wineprefix": "Chọn thư mục Wine Prefix",
         "yes": "Có",
         "dontShowAgain": "Không hiển thị lại",
-        "choose-nile-binary": "Chọn nhị phân sông Nile"
+        "choose-nile-binary": "Chọn nhị phân sông Nile",
+        "update": "Update"
     },
     "button": {
         "cancel": "Cancel",
@@ -218,7 +224,8 @@
     "game": {
         "status": "Status",
         "store": "Cửa hàng",
-        "title": "Tựa game"
+        "title": "Tựa game",
+        "modify": "Sửa đổi cài đặt"
     },
     "generic": {
         "error": {
@@ -239,7 +246,8 @@
         "show_available_games": "Show non-Available games",
         "show_favourites_only": "Chỉ hiển thị mục ưa thích",
         "show_hidden": "Hiển thị mục bị ẩn",
-        "store": "Lọc cửa hàng"
+        "store": "Lọc cửa hàng",
+        "filters": "Lọc"
     },
     "help": {
         "amdfsr": "AMD's FSR helps boost framerate by upscaling lower resolutions in Fullscreen Mode. Image quality increases from 5 to 1 at the cost of a slight performance hit. Enabling may improve performance.",
@@ -280,7 +288,15 @@
             "part1": "Heroic tìm kiếm các phiên bản Wine, Proton và CrossOver trong các thư mục sau:",
             "part2": "Đối với vị trí khác, sử dụng biểu tượng liên kết với một trong những thư mục này"
         },
-        "disable_logs": "BẬT hộp kiểm này để vô hiệu hóa hầu hết các thao tác ghi vào tệp nhật ký (thông tin quan trọng luôn được ghi lại). Đảm bảo TẮT cài đặt này trước khi báo cáo bất kỳ sự cố nào."
+        "disable_logs": "BẬT hộp kiểm này để vô hiệu hóa hầu hết các thao tác ghi vào tệp nhật ký (thông tin quan trọng luôn được ghi lại). Đảm bảo TẮT cài đặt này trước khi báo cáo bất kỳ sự cố nào.",
+        "title": {
+            "accessibility": "Khả năng tiếp cận",
+            "settings": "Cài đặt",
+            "downloadManager": "Download Manager",
+            "wineManager": "Quản lý Wine (thử nghiệm)",
+            "library": "Thư viện"
+        },
+        "msync": "Fsync aims to reduce wineserver overhead in CPU-intensive games. Enabling may improve performance on supported Linux kernels."
     },
     "info": {
         "heroic": {
@@ -314,7 +330,8 @@
         "path": "Chọn đường dẫn cài"
     },
     "label": {
-        "loading": "Loading"
+        "loading": "Loading",
+        "releaseDate": "Release Date"
     },
     "library": {
         "refresh": "Tải lại",
@@ -531,7 +548,10 @@
             "instructions_title": "Làm sao để báo lỗi?",
             "last-log": "Log lần trước",
             "no-file": "Không tìm thấy file log",
-            "show-in-folder": "Hiển thị file log trong thư mục"
+            "show-in-folder": "Hiển thị file log trong thư mục",
+            "upload": {
+                "actions": "Action"
+            }
         },
         "mangohud": "Bật Mangohud (Cần cài mangohud)",
         "manualsync": {
@@ -577,7 +597,9 @@
         "disable_logs": "Tắt nhật ký",
         "addgamestoapplications": "Tự động thêm trò chơi vào Ứng dụng",
         "showMetalOverlay": "Hiển thị lớp phủ thống kê",
-        "alt-nile-bin": "Chọn một nhị phân Nile thay thế"
+        "alt-nile-bin": "Chọn một nhị phân Nile thay thế",
+        "autodxvknvapi": "Tự động cài đặt/cập nhật DXVK-NVAPI trên prefix",
+        "msync": "Bật Esync"
     },
     "settings": {
         "battlEyeRuntime": {
@@ -619,6 +641,19 @@
         "saves": {
             "label": "Save Location:",
             "warning": "Cloud Saves feature is in Beta, please backup your saves before syncing (in case something goes wrong)"
+        },
+        "advanced": {
+            "clearCache": {
+                "help8": "Game đã cài",
+                "help9": "Game settings"
+            },
+            "details": "Chi tiết",
+            "title": {
+                "resetHeroic": "Đặt lại Heroic"
+            },
+            "resetHeroic": {
+                "help": "Are you sure you want to reset Heroic? This will remove all Settings and Caching but won't remove your Installed games or your Epic credentials. Portable versions (AppImage, WinPortable, ...) of heroic needs to be restarted manually afterwards."
+            }
         }
     },
     "Settings": "Cài đặt",
@@ -702,5 +737,16 @@
     },
     "amazon": "amazon",
     "Amazon Games": "Trò chơi Amazon",
-    "prime-gaming": "Trò chơi chính"
+    "prime-gaming": "Trò chơi chính",
+    "winetricks": {
+        "install": "Install",
+        "loading": "Loading"
+    },
+    "category-settings": {
+        "cancel": "Cancel",
+        "warning": "Warning"
+    },
+    "window": {
+        "close": "Đóng"
+    }
 }

@@ -169,7 +169,7 @@ abstract class GameConfig {
     } else {
       // No upgrades necessary, load config.
       // `this.version` should be `currentGameConfigVersion` at this point.
-      this.config = (await this.getSettings()) as GameSettings
+      this.config = await this.getSettings()
     }
   }
 }
@@ -207,11 +207,13 @@ class GameConfigV0 extends GameConfig {
 
     const {
       autoInstallDxvk,
+      autoInstallDxvkNvapi,
       autoInstallVkd3d,
       preferSystemLibs,
       autoSyncSaves,
       enableEsync,
       enableFSR,
+      enableMsync,
       enableFsync,
       maxSharpness,
       launcherArgs,
@@ -227,17 +229,24 @@ class GameConfigV0 extends GameConfig {
       winePrefix,
       wineCrossoverBottle,
       wineVersion,
-      useSteamRuntime
+      useSteamRuntime,
+      eacRuntime,
+      battlEyeRuntime,
+      beforeLaunchScriptPath,
+      afterLaunchScriptPath,
+      gamescope
     } = GlobalConfig.get().getSettings()
 
     // initialize generic defaults
     // TODO: I know more values can be moved that are not used in windows
     const defaultSettings = {
       autoInstallDxvk,
+      autoInstallDxvkNvapi,
       autoInstallVkd3d,
       preferSystemLibs,
       autoSyncSaves,
       enableEsync,
+      enableMsync,
       enableFSR,
       enableFsync,
       maxSharpness,
@@ -252,7 +261,12 @@ class GameConfigV0 extends GameConfig {
       targetExe,
       useGameMode,
       useSteamRuntime,
-      language: '' // we want to fallback to '' always here, fallback lang for games should be ''
+      battlEyeRuntime,
+      eacRuntime,
+      language: '', // we want to fallback to '' always here, fallback lang for games should be ''
+      beforeLaunchScriptPath,
+      afterLaunchScriptPath,
+      gamescope
     } as GameSettings
 
     let gameSettings = {} as GameSettings

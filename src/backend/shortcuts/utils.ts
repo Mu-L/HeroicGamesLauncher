@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'graceful-fs'
 import { heroicIconFolder as iconsFolder } from '../constants'
 import { GameInfo } from 'common/types'
-import { spawnSync } from 'child_process'
 import { basename, dirname, extname, join } from 'path'
 import { getProductApi } from 'backend/storeManagers/gog/library'
+import { downloadFile } from 'backend/utils'
+import { createAbortController } from 'backend/utils/aborthandler/aborthandler'
 
 function createImage(
   buffer: Buffer,
@@ -24,7 +25,11 @@ function downloadImage(
   outputFilePath: string
 ): string | undefined {
   try {
-    spawnSync('curl', ['-L', imageURL, '-o', outputFilePath])
+    downloadFile({
+      url: imageURL,
+      dest: outputFilePath,
+      abortSignal: createAbortController(imageURL).signal
+    })
   } catch (error) {
     return `Donwloading of ${imageURL} failed with:\n${error}`
   }
@@ -63,6 +68,20 @@ async function getIcon(appName: string, gameInfo: GameInfo) {
   let icon = `${iconsFolder}/${appName}.jpg`
 
   if (gameInfo.runner === 'gog') {
+    const icoPath = join(
+      gameInfo.install.install_path!,
+      `goggame-${appName}.ico`
+    )
+    const linuxNativePath = join(
+      gameInfo.install.install_path!,
+      'support',
+      'icon.png'
+    )
+    if (existsSync(icoPath)) {
+      return icoPath
+    } else if (existsSync(linuxNativePath)) {
+      return linuxNativePath
+    }
     const productApiData = await getProductApi(appName)
     if (productApiData && productApiData.data.images?.icon) {
       image = 'https:' + productApiData.data.images?.icon

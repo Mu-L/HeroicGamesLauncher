@@ -6,7 +6,9 @@ import { InstallPlatform, WineInstallation, GameInfo } from 'common/types'
 import {
   CachedImage,
   TextInputField,
-  PathSelectionBox
+  PathSelectionBox,
+  ToggleSwitch,
+  InfoBox
 } from 'frontend/components/UI'
 import { DialogContent, DialogFooter } from 'frontend/components/UI/Dialog'
 import {
@@ -16,12 +18,13 @@ import {
   writeConfig
 } from 'frontend/helpers'
 import React, { useContext, useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { AvailablePlatforms } from '..'
 import fallbackImage from 'frontend/assets/heroic_card.jpg'
 import ContextProvider from 'frontend/state/ContextProvider'
 import classNames from 'classnames'
 import axios from 'axios'
+import { NavLink } from 'react-router-dom'
 
 type Props = {
   availablePlatforms: AvailablePlatforms
@@ -46,12 +49,12 @@ export default function SideloadDialog({
   children,
   appName
 }: Props) {
-  const { t } = useTranslation('gamepage')
-  const [title, setTitle] = useState<string | never>(
-    t('sideload.field.title', 'Title')
-  )
+  const { t, i18n } = useTranslation('gamepage')
+  const [title, setTitle] = useState<string>(t('sideload.field.title', 'Title'))
   const [selectedExe, setSelectedExe] = useState('')
   const [gameUrl, setGameUrl] = useState('')
+  const [customUserAgent, setCustomUserAgent] = useState('')
+  const [launchFullScreen, setLaunchFullScreen] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
   const [searching, setSearching] = useState(false)
   const [app_name, setApp_name] = useState(appName ?? '')
@@ -81,7 +84,9 @@ export default function SideloadDialog({
           art_square,
           install: { executable, platform },
           title,
-          browserUrl
+          browserUrl,
+          customUserAgent,
+          launchFullScreen
         } = info
 
         if (executable && platform) {
@@ -92,6 +97,15 @@ export default function SideloadDialog({
           setGameUrl(browserUrl)
         }
 
+        if (customUserAgent) {
+          setCustomUserAgent(customUserAgent)
+        }
+
+        console.log(launchFullScreen)
+        if (launchFullScreen !== undefined) {
+          setLaunchFullScreen(launchFullScreen)
+        }
+
         setTitle(title)
         setImageUrl(art_cover ? art_cover : art_square)
       })
@@ -100,25 +114,14 @@ export default function SideloadDialog({
     }
   }, [])
 
+  // Suggest default Wine prefix if we're adding a new app
   useEffect(() => {
-    const setWine = async () => {
-      if (editMode && appName) {
-        const appSettings = await window.api.getGameSettings(
-          appName,
-          'sideload'
-        )
-        if (appSettings?.winePrefix) {
-          setWinePrefix(appSettings.winePrefix)
-        }
-        return
-      } else {
-        const { defaultWinePrefix } = await window.api.requestAppSettings()
-        const sugestedWinePrefix = `${defaultWinePrefix}/${title}`
-        setWinePrefix(sugestedWinePrefix)
-      }
-    }
-    setWine()
-  }, [title])
+    if (editMode) return
+    window.api.requestAppSettings().then(({ defaultWinePrefix }) => {
+      const suggestedWinePrefix = `${defaultWinePrefix}/${title}`
+      setWinePrefix(suggestedWinePrefix)
+    })
+  }, [title, editMode])
 
   async function searchImage() {
     setSearching(true)
@@ -159,23 +162,27 @@ export default function SideloadDialog({
       is_installed: true,
       art_square: imageUrl ? imageUrl : fallbackImage,
       canRunOffline: true,
-      browserUrl: gameUrl
+      browserUrl: gameUrl,
+      customUserAgent,
+      launchFullScreen
     })
     const gameSettings = await getGameSettings(app_name, 'sideload')
     if (!gameSettings) {
       return
     }
-    await writeConfig({
-      appName: app_name,
-      config: {
-        ...gameSettings,
-        winePrefix,
-        wineVersion,
-        wineCrossoverBottle: crossoverBottle
-      }
-    })
+    if (!editMode)
+      window.api.writeConfig({
+        appName: app_name,
+        config: {
+          ...gameSettings,
+          winePrefix,
+          wineVersion,
+          wineCrossoverBottle: crossoverBottle
+        }
+      })
 
     await refreshLibrary({
+      library: 'sideload',
       runInBackground: true,
       checkForUpdates: true
     })
@@ -284,6 +291,22 @@ export default function SideloadDialog({
             </span>
           </div>
           <div className="sideloadForm">
+            <InfoBox
+              text={t(
+                'sideload.import-hint.title',
+                'Important! Are you adding a game from Epic/GOG/Amazon? Click here!'
+              )}
+            >
+              <div className="sideloadImportHint">
+                <Trans i18n={i18n} key="sideload.import-hint.content">
+                  Do NOT use this feature for that.
+                  <br />
+                  Instead, <NavLink to={'/login'}>log into</NavLink> the store,
+                  look for the game in your library, open the installation
+                  dialog, and click the &quot;Import Game&quot; button
+                </Trans>
+              </div>
+            </InfoBox>
             <TextInputField
               label={t('sideload.info.title', 'Game/App Title')}
               placeholder={t(
@@ -322,16 +345,37 @@ export default function SideloadDialog({
               />
             )}
             {!showSideloadExe && (
-              <TextInputField
-                label={t('sideload.info.broser', 'BrowserURL')}
-                placeholder={t(
-                  'sideload.placeholder.url',
-                  'Paste the Game URL here'
-                )}
-                onChange={(e) => handleGameUrl(e.target.value)}
-                htmlId="sideload-game-url"
-                value={gameUrl}
-              />
+              <>
+                <TextInputField
+                  label={t('sideload.info.broser', 'BrowserURL')}
+                  placeholder={t(
+                    'sideload.placeholder.url',
+                    'Paste the Game URL here'
+                  )}
+                  onChange={(e) => handleGameUrl(e.target.value)}
+                  htmlId="sideload-game-url"
+                  value={gameUrl}
+                />
+                <TextInputField
+                  label={t('sideload.info.useragent', 'Custom User Agent')}
+                  placeholder={t(
+                    'sideload.placeholder.useragent',
+                    'Write a custom user agent here to be used on this browser app/game'
+                  )}
+                  onChange={(e) => setCustomUserAgent(e.target.value)}
+                  htmlId="sideload-user-agent"
+                  value={customUserAgent}
+                />
+                <ToggleSwitch
+                  htmlId="launch-fullscreen"
+                  value={launchFullScreen}
+                  handleChange={() => setLaunchFullScreen(!launchFullScreen)}
+                  title={t(
+                    'sideload.info.fullscreen',
+                    'Launch Fullscreen (F11 to exit)'
+                  )}
+                />
+              </>
             )}
           </div>
         </div>

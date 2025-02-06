@@ -20,20 +20,53 @@ interface GameInstallInfo {
   owned_dlc: Array<DLCInfo>
   title: string
   version: string
+  branches: Array<string | null>
   buildId: string
 }
 
-interface DLCInfo {
+type PerLanguageSize = {
+  '*': { download_size: number; disk_size: number }
+  [key: string]: { download_size: number; disk_size: number }
+}
+
+// Raw output of gogdl info command
+export interface GOGDLInstallInfo {
+  size: PerLanguageSize
+  download_size?: number // only linux native
+  disk_size?: number
+  languages: Array<string>
+  dlcs: Array<{ title: string; id: string; size: PerLanguageSize }>
+  buildId: string
+  os: GogInstallPlatform
+  branch: string | null
+  dependencies: Array<string>
+  versionName: string
+  versionEtag: string
+  folder_name: string
+  available_branches: Array<string>
+  builds: {
+    items: Array<BuildItem>
+    total_count: number
+    count: number
+    has_private_branches: boolean
+  }
+}
+
+export interface DLCInfo {
   app_name: string
   title: string
+  perLangSize: PerLanguageSize
 }
 
 interface GameManifest {
   app_name: string
   disk_size: number
   download_size: number
+  perLangSize: PerLanguageSize
   languages: string[]
   versionEtag: string
+  dependencies: string[]
+  builds?: BuildItem[]
 }
 
 export interface GOGCloudSavesLocation {
@@ -183,7 +216,7 @@ interface GamesDBDataBase {
   first_release_date: string
   title: LanguageMapper<string>
   sorting_title: LanguageMapper<string>
-  type: 'game'
+  type: 'game' | 'dlc' | 'spam'
   summary: LanguageMapper<string>
   videos: {
     provider: 'youtube'
@@ -231,10 +264,10 @@ interface GamesDBDataInner extends GamesDBDataBase {
   horizontal_artwork: {
     url_format: string
   }
-  background: {
+  background?: {
     url_format: string
   }
-  vertical_cover: {
+  vertical_cover?: {
     url_format: string
   }
   cover: {
@@ -243,7 +276,7 @@ interface GamesDBDataInner extends GamesDBDataBase {
   icon?: {
     url_format: string
   }
-  square_icon: {
+  square_icon?: {
     url_format: string
   }
   global_popularity_all_time: number
@@ -309,7 +342,17 @@ export interface BuildItem {
   public: boolean
   date_published: string
   generation: number
-  link: string
+  link?: string
+  // Visible only with _version=2 parameter
+  urls?: {
+    endpoint_name: string
+    url: string
+    url_format: string
+    parameters: string
+    fallback_only: boolean
+    max_fails: number
+    priority: number
+  }[]
 }
 
 interface ProductsEndpointFile {
@@ -396,4 +439,94 @@ export interface ProductsEndpointData {
     language_packs: Array<ProductsEndpointInstaller>
     bonus_content: Array<ProductsEndpointBonusContent>
   }
+  changelog?: string
+}
+
+// MANIFESTS
+
+export interface GOGv1Manifest {
+  version: 1
+  product: {
+    timestamp: number
+    depots: Array<
+      | {
+          languages: string[]
+          size: string
+          gameIDs: string[]
+          systems: string[]
+          manifest: string
+        }
+      | { redist: string; executable: string; argument: string; size: string }
+    >
+
+    support_commands: {
+      languages: string[]
+      executable: string
+      gameID: string
+      argument: string
+      systems: string[]
+    }[]
+    installDirectory: string
+    rootGameID: string
+    gameIDs: {
+      gameID: string
+      name: { [lang: string]: string }
+      dependencies: string[]
+      standalone: boolean
+    }[]
+    projectName: string
+  }
+}
+
+export interface GOGv2Manifest {
+  version: 2
+  baseProductId: string
+  buildId: string
+  clientId?: string
+  clientSecret?: string
+  dependencies?: string[]
+  depots: Array<{
+    compressedSize: number
+    languages: string[]
+    manifest: string
+    productId: string
+    size: number
+    isGogDepot?: boolean
+  }>
+  platform: GogInstallPlatform
+  installDirectory: string
+  products: Array<{
+    name: string
+    productId: string
+    temp_arguments: string
+    temp_executable: string
+  }>
+  tags?: string[]
+  scriptInterpreter?: boolean
+}
+
+export interface GOGRedistManifest {
+  depots: Array<{
+    compressedSize: number
+    dependencyId: string
+    executable: { arguments: string; path: string }
+    internal: boolean
+    readableName: string
+    manifest: string
+    signature: string
+    size: number
+  }>
+  build_id?: string
+  HGLInstalled?: string[]
+}
+
+export interface GOGCredentials {
+  access_token: string
+  expires_in: number
+  token_type: string
+  scope: string
+  session_id: string
+  refresh_token: string
+  user_id: string
+  loginType: number
 }

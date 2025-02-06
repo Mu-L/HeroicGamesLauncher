@@ -152,12 +152,18 @@
             "wine-change": {
                 "title": "Vino nije pronađeno!",
                 "message": "Nismo mogli pronaći odabranu verziju vina za lansiranje ovog naslova ({{selectedWine}}). {{newline}} Pronašli smo još jedan, da li želite da nastavite sa pokretanjem koristeći {{foundWine}} ?"
+            },
+            "sideload": {
+                "confirmExit": {
+                    "title": "Jeste li sigurni da se želite odjaviti?"
+                }
             }
         },
         "wineprefix": "Odaberite Wine Prefix mapu",
         "yes": "DA",
         "dontShowAgain": "Ne prikazuj ponovo",
-        "choose-nile-binary": "Odaberite binarni Nil"
+        "choose-nile-binary": "Odaberite binarni Nil",
+        "update": "Update"
     },
     "button": {
         "cancel": "Cancel",
@@ -280,7 +286,14 @@
             "part1": "Heroic traži verzije Wine, Proton i CrossOver u sljedećim mapama:",
             "part2": "Za druga mjesta koristite simboličku vezu do jednog od ovih mapa"
         },
-        "disable_logs": "Uključite ovaj okvir za potvrdu kako biste onemogućili većinu upisivanja u datoteke dnevnika (kritične informacije se uvijek evidentiraju). Obavezno ISKLJUČITE ovu postavku prije nego što prijavite bilo kakav problem."
+        "disable_logs": "Uključite ovaj okvir za potvrdu kako biste onemogućili većinu upisivanja u datoteke dnevnika (kritične informacije se uvijek evidentiraju). Obavezno ISKLJUČITE ovu postavku prije nego što prijavite bilo kakav problem.",
+        "title": {
+            "accessibility": "Pristupačnost",
+            "settings": "Postavke",
+            "downloadManager": "Download Manager",
+            "wineManager": "Wine menadžer",
+            "library": "Biblioteka"
+        }
     },
     "info": {
         "heroic": {
@@ -314,7 +327,8 @@
         "path": "Izaberi put instalacije"
     },
     "label": {
-        "loading": "Loading"
+        "loading": "Loading",
+        "releaseDate": "Datum izlaska"
     },
     "library": {
         "refresh": "Osvježi",
@@ -527,11 +541,14 @@
         "log": {
             "copy-to-clipboard": "Kopirajte sadržaj zapisnika u međuspremnik",
             "current-log": "Trenutni dnevnik",
-            "instructions": "Pridružite se našem Discordu i potražite kanal koji odgovara vašem operativnom sistemu. Podijelite sadržaj ovdje prikazanih dnevnika i uključite jasan opis problema sa svim relevantnim informacijama i detaljima.",
+            "instructions": "Pridružite se našem Discordu i potražite odjeljak \"#-podrška\". Pročitajte zakačenu nit \"Prvo me pročitajte | Često postavljana pitanja\" i slijedite upute da podijelite ove zapise i sve relevantne informacije o svom problemu.",
             "instructions_title": "Kako prijaviti problem?",
             "last-log": "Zadnji dnevnik",
             "no-file": "Nije pronađena datoteka zapisnika",
-            "show-in-folder": "Prikaži datoteku zapisnika u mapi"
+            "show-in-folder": "Prikaži datoteku zapisnika u mapi",
+            "upload": {
+                "actions": "Action"
+            }
         },
         "mangohud": "Omogući Mangohud (Mangohud treba biti instaliran)",
         "manualsync": {
@@ -577,7 +594,9 @@
         "disable_logs": "Onemogući dnevnike",
         "addgamestoapplications": "Automatski dodajte igre u aplikacije",
         "showMetalOverlay": "Prikaži preklapanje statistike",
-        "alt-nile-bin": "Odaberite alternativnu Nilsku binarnu"
+        "alt-nile-bin": "Odaberite alternativnu Nilsku binarnu",
+        "autodxvknvapi": "Automatska instalacija/ažuriranje DXVK-NVAPI na prefiksu",
+        "msync": "Omogućite Esync"
     },
     "settings": {
         "battlEyeRuntime": {
@@ -619,6 +638,14 @@
         "saves": {
             "label": "Sačuvaj lokaciju:",
             "warning": "Funkcija čuvanja u oblaku je u beta verziji, napravite sigurnosnu kopiju vaših sačuvanih podataka prije sinhronizacije (u slučaju da nešto krene po zlu)"
+        },
+        "advanced": {
+            "title": {
+                "resetHeroic": "Resetujte Heroic"
+            },
+            "clearCache": {
+                "help9": "Game Settings"
+            }
         }
     },
     "Settings": "Postavke",
@@ -702,5 +729,13 @@
     },
     "amazon": "Amazon",
     "Amazon Games": "Amazon igre",
-    "prime-gaming": "Prime Gaming"
+    "prime-gaming": "Prime Gaming",
+    "winetricks": {
+        "install": "Install",
+        "loading": "Loading"
+    },
+    "category-settings": {
+        "cancel": "Cancel",
+        "warning": "Warning"
+    }
 }

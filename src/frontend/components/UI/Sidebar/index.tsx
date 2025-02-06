@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import CurrentDownload from './components/CurrentDownload'
 import SidebarLinks from './components/SidebarLinks'
-import './index.scss'
+import './index.css'
 import HeroicVersion from './components/HeroicVersion'
 import { DMQueueElement } from 'common/types'
 
-import { ReactComponent as HeroicIcon } from 'frontend/assets/heroic-icon.svg'
+import HeroicIcon from 'frontend/assets/heroic-icon.svg?react'
 import { useNavigate } from 'react-router-dom'
+import { WebviewTag } from 'electron'
 
 let sidebarSize = localStorage.getItem('sidebar-width') || 240
 const minWidth = 60
@@ -49,7 +50,7 @@ export default React.memo(function Sidebar() {
   }, [sidebarEl])
 
   useEffect(() => {
-    window.api.handleGoToScreen((e: Event, screen: string) => {
+    window.api.handleGoToScreen((e, screen) => {
       // handle navigate to screen
       navigate(screen, { state: { fromGameCard: false } })
     })
@@ -82,9 +83,7 @@ export default React.memo(function Sidebar() {
       localStorage.setItem('sidebar-width', sidebarSize.toString())
 
       // Re-enable pointer events on webview element
-      const webviewEl = document.querySelector(
-        'webview'
-      ) as HTMLDivElement | null
+      const webviewEl = document.querySelector<WebviewTag>('webview')
       if (webviewEl) {
         webviewEl.style.pointerEvents = 'auto'
       }
@@ -95,7 +94,7 @@ export default React.memo(function Sidebar() {
     document.body.addEventListener('mousemove', onMouseMove)
 
     // Disable pointer events on webview element
-    const webviewEl = document.querySelector('webview') as HTMLDivElement | null
+    const webviewEl = document.querySelector<WebviewTag>('webview')
     if (webviewEl) {
       webviewEl.style.pointerEvents = 'none'
     }

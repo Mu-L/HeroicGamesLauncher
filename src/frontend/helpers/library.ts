@@ -4,7 +4,8 @@ import {
   GameInfo,
   InstallProgress,
   Runner,
-  UpdateParams
+  UpdateParams,
+  LaunchOption
 } from 'common/types'
 
 import { TFunction } from 'i18next'
@@ -19,13 +20,15 @@ type InstallArgs = {
   isInstalling: boolean
   previousProgress: InstallProgress | null
   progress: InstallProgress
-  installDlcs?: Array<string> | boolean
+  installDlcs?: Array<string>
   t: TFunction<'gamepage'>
   showDialogModal: (options: DialogModalOptions) => void
   setInstallPath?: (path: string) => void
   platformToInstall?: InstallPlatform
   sdlList?: Array<string>
   installLanguage?: string
+  build?: string
+  branch?: string
 }
 
 async function install({
@@ -37,9 +40,11 @@ async function install({
   previousProgress,
   setInstallPath,
   sdlList = [],
-  installDlcs = false,
+  installDlcs = [],
   installLanguage = 'en-US',
   platformToInstall = 'Windows',
+  build,
+  branch,
   showDialogModal
 }: InstallArgs) {
   if (!installPath) {
@@ -113,7 +118,9 @@ async function install({
     installLanguage,
     runner,
     platformToInstall,
-    gameInfo
+    gameInfo,
+    build,
+    branch
   })
 }
 
@@ -157,19 +164,21 @@ const repair = async (appName: string, runner: Runner): Promise<void> =>
 type LaunchOptions = {
   appName: string
   t: TFunction<'gamepage'>
-  launchArguments?: string
+  launchArguments?: LaunchOption
   runner: Runner
   hasUpdate: boolean
   showDialogModal: (options: DialogModalOptions) => void
+  args?: string[]
 }
 
 const launch = async ({
   appName,
   t,
-  launchArguments = '',
+  launchArguments,
   runner,
   hasUpdate,
-  showDialogModal
+  showDialogModal,
+  args
 }: LaunchOptions): Promise<{ status: 'done' | 'error' | 'abort' }> => {
   if (hasUpdate) {
     const { ignoreGameUpdates } = await window.api.requestGameSettings(appName)
@@ -178,10 +187,9 @@ const launch = async ({
       return window.api.launch({
         appName,
         runner,
-        launchArguments:
-          launchArguments +
-          ' ' +
-          (runner === 'legendary' ? '--skip-version-check' : '')
+        launchArguments,
+        args,
+        skipVersionCheck: true
       })
     }
 
@@ -210,10 +218,9 @@ const launch = async ({
                   window.api.launch({
                     appName,
                     runner,
-                    launchArguments:
-                      launchArguments +
-                      ' ' +
-                      (runner === 'legendary' ? '--skip-version-check' : '')
+                    launchArguments,
+                    args,
+                    skipVersionCheck: true
                   })
                 )
               }
@@ -226,7 +233,7 @@ const launch = async ({
     return launchFinished
   }
 
-  return window.api.launch({ appName, launchArguments, runner })
+  return window.api.launch({ appName, launchArguments, runner, args })
 }
 
 const updateGame = (args: UpdateParams) => {

@@ -13,14 +13,16 @@
 
 .Settings .Field,
 .Accessibility .Field,
-.InstallModal__dialog .Field {
+.InstallModal__dialog .Field,
+.ModifyInstall__dialog .Field {
   padding: var(--space-md) 0px;
   width: 100%;
 }
 
 .Settings .Field label,
 .Accessibility .Field label,
-.InstallModal__dialog .Field label {
+.InstallModal__dialog .Field label,
+.ModifyInstall__dialog .Field label {
   cursor: default;
   margin-bottom: var(--space-md);
   font: var(--font-secondary-regular);
@@ -100,6 +102,15 @@
 
 .warning {
   color: yellow;
+  font-size: var(--text-sm);
+  width: 100%;
+  max-width: 513px;
+  white-space: break-spaces;
+  padding-top: var(--space-3xs);
+}
+
+.error {
+  color: red;
   font-size: var(--text-sm);
   width: 100%;
   max-width: 513px;
@@ -202,7 +213,7 @@ a {
   margin: 0;
 }
 
-.eosSettings {
+.advancedSetting {
   text-align: start;
 }
 

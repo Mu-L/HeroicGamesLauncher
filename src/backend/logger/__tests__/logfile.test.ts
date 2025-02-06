@@ -4,7 +4,7 @@ import { join } from 'path'
 import { app } from 'electron'
 import { configStore } from '../../constants'
 import * as logfile from '../logfile'
-import { logError } from '../logger'
+import * as logger from '../logger'
 import { describeSkipOnWindows } from 'backend/__tests__/skip'
 
 jest.mock('electron')
@@ -26,24 +26,20 @@ describeSkipOnWindows('logger/logfile.ts', () => {
   })
 
   test('createNewLogFileAndClearOldOnes fails because logDir does not exist', () => {
-    const spyAppGetPath = jest.spyOn(app, 'getPath').mockReturnValue('invalid')
-    const spyOpenSync = jest.spyOn(graceful_fs, 'openSync')
+    jest.spyOn(app, 'getPath').mockImplementation(() => {
+      throw Error('Some error message from getPath')
+    })
+    const consoleSpy = jest.spyOn(console, 'log')
 
-    logfile.createNewLogFileAndClearOldOnes()
+    const logs = logfile.createNewLogFileAndClearOldOnes()
 
-    expect(spyOpenSync).toBeCalledWith(
-      expect.stringContaining('invalid/heroic-'),
-      'w'
-    )
-    expect(spyAppGetPath).toBeCalledWith('logs')
-    expect(logError).toBeCalledWith(
-      [
-        expect.stringContaining(`Open invalid/heroic-`),
-        expect.objectContaining(
-          Error("ENOENT: no such file or directory, open 'invalid/heroic-")
-        )
-      ],
-      { prefix: 'Backend', skipLogToFile: true }
+    expect(logs.currentLogFile).toBe('')
+    expect(logs.gogdlLogFile).toBe('')
+    expect(logs.lastLogFile).toBe('')
+    expect(logs.legendaryLogFile).toBe('')
+    expect(logs.nileLogFile).toBe('')
+    expect(consoleSpy).toBeCalledWith(
+      "Could not get 'logs' directory. Error: Some error message from getPath"
     )
   })
 
@@ -59,7 +55,7 @@ describeSkipOnWindows('logger/logfile.ts', () => {
 
     const data = logfile.createNewLogFileAndClearOldOnes()
 
-    expect(logError).not.toBeCalled()
+    expect(logger.logError).not.toBeCalled()
     expect(data).toStrictEqual({
       currentLogFile: expect.any(String),
       lastLogFile: 'old/log/path/file.log',
@@ -87,7 +83,7 @@ describeSkipOnWindows('logger/logfile.ts', () => {
 
     logfile.createNewLogFileAndClearOldOnes()
 
-    expect(logError).toBeCalledWith(
+    expect(logger.logError).toBeCalledWith(
       [
         expect.stringContaining('Removing old logs in /tmp/'),
         Error('unlink failed')
@@ -119,61 +115,28 @@ describeSkipOnWindows('logger/logfile.ts', () => {
 
     logfile.createNewLogFileAndClearOldOnes()
 
-    expect(logError).not.toBeCalled()
+    expect(logger.logError).not.toBeCalled()
     expect(graceful_fs.existsSync(monthOutdatedLogFile)).toBeFalsy()
     expect(graceful_fs.existsSync(yearOutdatedLogFile)).toBeFalsy()
   })
 
   test('getLogFile all possible values', () => {
-    // get global current logfile
-    expect(logfile.getLogFile({})).toBe('current.log')
-    // get global last logfile
-    expect(logfile.getLogFile({ defaultLast: true })).toBe('last.log')
-
+    expect(logfile.getLogFile('heroic')).toMatch(/-heroic.log$/)
+    expect(logfile.getLogFile('legendary')).toMatch(/-legendary.log$/)
+    expect(logfile.getLogFile('gogdl')).toMatch(/-gogdl.log$/)
+    expect(logfile.getLogFile('nile')).toMatch(/-nile.log$/)
     // get game log
-    expect(logfile.getLogFile({ appName: 'MyApp' })).toBe(
-      '/tmp/appData/heroic/GamesConfig/MyApp-lastPlay.log'
-    )
-    // get game log and isDefaultLast has no impact
-    expect(logfile.getLogFile({ appName: 'MyApp', defaultLast: true })).toBe(
+    expect(logfile.getLogFile('MyApp')).toBe(
       '/tmp/appData/heroic/GamesConfig/MyApp-lastPlay.log'
     )
   })
 
-  test('appendMessageToLogFile success', () => {
-    const appendFileSyncSpy = jest
-      .spyOn(graceful_fs, 'appendFileSync')
+  test('appendMessageToLogFile success', async () => {
+    const appendHeroicLogSpy = jest
+      .spyOn(logger, 'appendHeroicLog')
       .mockReturnValue()
 
     logfile.appendMessageToLogFile('Hello World')
-    expect(appendFileSyncSpy).toBeCalledWith('current.log', 'Hello World\n')
-  })
-
-  test('appendMessageToLogFile logfile undefined', () => {
-    const appendFileSyncSpy = jest
-      .spyOn(graceful_fs, 'appendFileSync')
-      .mockReturnValue()
-
-    const mockConstants = jest.requireMock('../../constants')
-    const defaultCurrentLogName = mockConstants.currentLogFile
-    mockConstants.currentLogFile = ''
-
-    logfile.appendMessageToLogFile('Hello World')
-
-    mockConstants.currentLogFile = defaultCurrentLogName
-
-    expect(appendFileSyncSpy).not.toBeCalled()
-  })
-
-  test('appendMessageToLogFile fails', () => {
-    jest.spyOn(graceful_fs, 'appendFileSync').mockImplementation(() => {
-      throw Error('append failed')
-    })
-
-    logfile.appendMessageToLogFile('Hello World')
-    expect(logError).toBeCalledWith(
-      ['Writing log file failed with', Error('append failed')],
-      { prefix: 'Backend', skipLogToFile: true }
-    )
+    expect(appendHeroicLogSpy).toBeCalledWith('Hello World\n')
   })
 })

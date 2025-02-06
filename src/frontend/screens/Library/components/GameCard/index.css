@@ -13,12 +13,16 @@
   aspect-ratio: 173/275;
 }
 
+.gameCard.gamepad {
+  aspect-ratio: 3/4;
+}
+
 .gameCard.justPlayed {
   aspect-ratio: 275/205;
 }
 
-.gameCard.gamepad {
-  aspect-ratio: 3/4;
+.gameCard.gamepad.justPlayed {
+  aspect-ratio: 328/205;
 }
 
 .gameCard:focus-within {
@@ -102,7 +106,8 @@
   transform: translateY(100%);
 }
 
-.gameCard:hover .gameTitle {
+.gameCard:hover .gameTitle,
+.titlesAlwaysVisible .gameTitle {
   display: block;
   transform: translateY(0);
 }
@@ -120,6 +125,10 @@
   justify-content: right;
   grid-template-columns: 0.3fr 1fr 0.4fr 0.5fr;
   grid-template-areas: 'update gap settings play';
+}
+
+.gameCard.justPlayed.hidden .justPlayedImg {
+  opacity: 0.2;
 }
 
 .gameCard.gamepad > .icons {
@@ -281,7 +290,9 @@
 
 .gameImg,
 .gameLogo {
-  transition: all 0.2s, opacity 0.5s;
+  transition:
+    all 0.2s,
+    opacity 0.5s;
 }
 
 .gameImg:not(.installed),
@@ -291,8 +302,8 @@
 
 .gameCard:hover .gameImg:not(.installed),
 .gameCard:hover .gameLogo:not(.installed),
-.gameImg.allTilesInColor,
-.gameLogo.allTilesInColor {
+.allTilesInColor .gameImg,
+.allTilesInColor .gameLogo {
   filter: grayscale(0);
 }
 
@@ -327,7 +338,7 @@
 .playIcon > span {
   font-family: var(--secondary-font-family);
   border-radius: 5px;
-  color: #161616;
+  color: #1d1d1d;
   cursor: pointer;
   padding: var(--space-xs-fixed);
   background: var(--success);
@@ -335,6 +346,15 @@
   font-weight: 500;
   font-size: 15px;
   text-align: center;
+}
+
+.playIcon:hover > span {
+  transition: 300ms;
+  background: var(--success-hover);
+}
+
+.playIcon[disabled] > span {
+  background: var(--icon-disabled);
 }
 
 .icons path,

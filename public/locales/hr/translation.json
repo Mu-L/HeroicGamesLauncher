@@ -152,12 +152,18 @@
             "wine-change": {
                 "title": "Vino nije pronađeno!",
                 "message": "Nismo mogli pronaći odabranu verziju vina za pokretanje ovog naslova ({{selectedWine}}). {{newline}} Pronašli smo još jedan, želite li nastaviti s pokretanjem pomoću {{foundWine}}?"
+            },
+            "sideload": {
+                "confirmExit": {
+                    "title": "Jeste li sigurni da se želite odjaviti?"
+                }
             }
         },
         "wineprefix": "Odaberite WinePrefix mapu",
         "yes": "DA",
         "dontShowAgain": "Ne prikazuj više",
-        "choose-nile-binary": "Odaberite Nile binary"
+        "choose-nile-binary": "Odaberite Nile binary",
+        "update": "Update"
     },
     "button": {
         "cancel": "Cancel",
@@ -239,7 +245,8 @@
         "show_available_games": "Pokaži nedostupne igre",
         "show_favourites_only": "Show Favourites only",
         "show_hidden": "Show Hidden",
-        "store": "Filter Store"
+        "store": "Filter Store",
+        "filters": "Filter"
     },
     "help": {
         "amdfsr": "AMD's FSR helps boost framerate by upscaling lower resolutions in Fullscreen Mode. Image quality increases from 5 to 1 at the cost of a slight performance hit. Enabling may improve performance.",
@@ -280,7 +287,16 @@
             "part1": "Heroic traži verzije za WIne, Proton i CrossOver u sljedečim mapama:",
             "part2": "Za druga mjesta, koristite simbolični link do tih mapa"
         },
-        "disable_logs": "Uključite ovaj potvrdni okvir kako biste onemogućili većinu pisanja u datoteke dnevnika (kritične informacije se uvijek bilježe). Obavezno ISKLJUČITE ovu postavku prije nego prijavite bilo kakav problem."
+        "disable_logs": "Uključite ovaj potvrdni okvir kako biste onemogućili većinu pisanja u datoteke dnevnika (kritične informacije se uvijek bilježe). Obavezno ISKLJUČITE ovu postavku prije nego prijavite bilo kakav problem.",
+        "title": {
+            "accessibility": "Prilagođeni pristup",
+            "login": "Login",
+            "settings": "Postavke",
+            "downloadManager": "Download Manager",
+            "wineManager": "Wine Manager",
+            "library": "Biblioteka"
+        },
+        "msync": "Fsync aims to reduce wineserver overhead in CPU-intensive games. Enabling may improve performance on supported Linux kernels."
     },
     "info": {
         "heroic": {
@@ -314,7 +330,8 @@
         "path": "Odaberi stazu instalacije"
     },
     "label": {
-        "loading": "Loading"
+        "loading": "Loading",
+        "releaseDate": "Release Date"
     },
     "library": {
         "refresh": "Osvježi",
@@ -527,11 +544,14 @@
         "log": {
             "copy-to-clipboard": "Kopiraj sadržaj dnevnika u međuspremnik",
             "current-log": "Current log",
-            "instructions": "Join our Discord and look for the \"#-support\" section. Read the pinned \"Read Me First | Frequently Asked Questions\" thread and follow the instructions to share these logs and any relevant information about your problem.",
+            "instructions": "Pridružite se našem Discordu i potražite odjeljak za \"#-podršku\". Pročitajte prikvačenu nit \"Prvo me pročitaj | Često postavljana pitanja\" i slijedite upute za dijeljenje ovih zapisa i svih relevantnih informacija o vašem problemu.",
             "instructions_title": "How to report a problem?",
             "last-log": "Last Log",
             "no-file": "Nije pronađena nijedna datoteka dnevnika",
-            "show-in-folder": "Show log file in folder"
+            "show-in-folder": "Show log file in folder",
+            "upload": {
+                "actions": "Action"
+            }
         },
         "mangohud": "Omogući Mangohud (Mangohud mora biti instaliran)",
         "manualsync": {
@@ -577,7 +597,9 @@
         "disable_logs": "Onemogući zapisnike",
         "addgamestoapplications": "Automatski dodajte igre u aplikacije",
         "showMetalOverlay": "Prikaži preklapanje statistike",
-        "alt-nile-bin": "Odaberite alternativni Nile Binary"
+        "alt-nile-bin": "Odaberite alternativni Nile Binary",
+        "autodxvknvapi": "Auto Install/Update DXVK-NVAPI on Prefix",
+        "msync": "Omoguči Esync"
     },
     "settings": {
         "battlEyeRuntime": {
@@ -619,6 +641,19 @@
         "saves": {
             "label": "Save Location:",
             "warning": "Cloud Saves feature is in Beta, please backup your saves before syncing (in case something goes wrong)"
+        },
+        "advanced": {
+            "clearCache": {
+                "help8": "Installed Games",
+                "help9": "Game settings"
+            },
+            "details": "Pojedinosti",
+            "title": {
+                "resetHeroic": "Reset Heroic"
+            },
+            "resetHeroic": {
+                "help": "Are you sure you want to reset Heroic? This will remove all Settings and Caching but won't remove your Installed games or your Epic credentials. Portable versions (AppImage, WinPortable, ...) of heroic needs to be restarted manually afterwards."
+            }
         }
     },
     "Settings": "Postavke",
@@ -702,5 +737,13 @@
     },
     "prime-gaming": "Prime Gaming",
     "amazon": "Amazon",
-    "Amazon Games": "Amazonove igre"
+    "Amazon Games": "Amazonove igre",
+    "winetricks": {
+        "install": "Install",
+        "loading": "Loading"
+    },
+    "category-settings": {
+        "cancel": "Odustani",
+        "warning": "Upozorenje"
+    }
 }

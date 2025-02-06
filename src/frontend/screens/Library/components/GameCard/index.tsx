@@ -11,13 +11,13 @@ import React, {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRepeat, faBan } from '@fortawesome/free-solid-svg-icons'
 
-import { ReactComponent as DownIcon } from 'frontend/assets/down-icon.svg'
+import DownIcon from 'frontend/assets/down-icon.svg?react'
 import { FavouriteGame, GameInfo, HiddenGame, Runner } from 'common/types'
 import { Link, useNavigate } from 'react-router-dom'
-import { ReactComponent as PlayIcon } from 'frontend/assets/play-icon.svg'
-import { ReactComponent as SettingsIcon } from 'frontend/assets/settings_icon_alt.svg'
-import { ReactComponent as StopIcon } from 'frontend/assets/stop-icon.svg'
-import { ReactComponent as StopIconAlt } from 'frontend/assets/stop-icon-alt.svg'
+import PlayIcon from 'frontend/assets/play-icon.svg?react'
+import SettingsIcon from 'frontend/assets/settings_icon_alt.svg?react'
+import StopIcon from 'frontend/assets/stop-icon.svg?react'
+import StopIconAlt from 'frontend/assets/stop-icon-alt.svg?react'
 import {
   getGameInfo,
   getProgress,
@@ -39,6 +39,8 @@ import StoreLogos from 'frontend/components/UI/StoreLogos'
 import UninstallModal from 'frontend/components/UI/UninstallModal'
 import { getCardStatus, getImageFormatting } from './constants'
 import { hasStatus } from 'frontend/hooks/hasStatus'
+import fallBackImage from 'frontend/assets/heroic_card.jpg'
+import LibraryContext from '../../LibraryContext'
 
 interface Card {
   buttonClick: () => void
@@ -87,14 +89,14 @@ const GameCard = ({
   const navigate = useNavigate()
 
   const {
-    layout,
     hiddenGames,
     favouriteGames,
-    allTilesInColor,
     showDialogModal,
     setIsSettingsModalOpen,
     activeController
   } = useContext(ContextProvider)
+
+  const { layout } = useContext(LibraryContext)
 
   const {
     title,
@@ -116,6 +118,8 @@ const GameCard = ({
   }
 
   const { status, folder, label } = hasStatus(appName, gameInfo, size)
+
+  const isBrowserGame = gameInfo.install.platform === 'Browser'
 
   useEffect(() => {
     setIsLaunching(false)
@@ -223,7 +227,7 @@ const GameCard = ({
     if (isInstalled) {
       const disabled =
         isLaunching ||
-        ['syncing-saves', 'launching', 'ubisoft'].includes(status!)
+        ['syncing-saves', 'launching', 'winetricks', 'redist'].includes(status!)
       return (
         <SvgButton
           className={!notAvailable ? 'playIcon' : 'notAvailableIcon'}
@@ -311,15 +315,12 @@ const GameCard = ({
       // settings
       label: t('submenu.settings', 'Settings'),
       onclick: () => setIsSettingsModalOpen(true, 'settings', gameInfo),
-      show: isInstalled && !isUninstalling
+      show: isInstalled && !isUninstalling && !isBrowserGame
     },
     {
       label: t('submenu.logs', 'Logs'),
       onclick: () => setIsSettingsModalOpen(true, 'log', gameInfo),
-      show:
-        isInstalled &&
-        !isUninstalling &&
-        gameInfo.install.platform !== 'Browser'
+      show: isInstalled && !isUninstalling && !isBrowserGame
     },
     {
       // hide
@@ -339,6 +340,11 @@ const GameCard = ({
       show: !isFavouriteGame
     },
     {
+      label: t('submenu.categories', 'Categories'),
+      onclick: () => setIsSettingsModalOpen(true, 'category', gameInfo),
+      show: true
+    },
+    {
       label: t('button.remove_from_favourites', 'Remove From Favourites'),
       onclick: () => favouriteGames.remove(appName),
       show: isFavouriteGame
@@ -352,7 +358,7 @@ const GameCard = ({
       // uninstall
       label: t('button.uninstall'),
       onclick: onUninstallClick,
-      show: isInstalled && !isUpdating
+      show: isInstalled && !isUpdating && !isPlaying
     }
   ]
 
@@ -361,12 +367,8 @@ const GameCard = ({
   const notAvailableClass = notAvailable ? 'notAvailable' : ''
   const gamepadClass = activeController ? 'gamepad' : ''
   const justPlayedClass = justPlayed ? 'justPlayed' : ''
-  const imgClasses = `gameImg ${isInstalled ? 'installed' : ''} ${
-    allTilesInColor ? 'allTilesInColor' : ''
-  }`
-  const logoClasses = `gameLogo ${isInstalled ? 'installed' : ''} ${
-    allTilesInColor && 'allTilesInColor'
-  }`
+  const imgClasses = `gameImg ${isInstalled ? 'installed' : ''}`
+  const logoClasses = `gameLogo ${isInstalled ? 'installed' : ''}`
 
   const wrapperClasses = `${
     grid ? 'gameCard' : 'gameListItem'
@@ -384,6 +386,8 @@ const GameCard = ({
       ></div>
     )
   }
+
+  const showSettingsButton = isInstalled && !isUninstalling && !isBrowserGame
 
   return (
     <div>
@@ -408,7 +412,7 @@ const GameCard = ({
             <StoreLogos runner={runner} />
             {justPlayed ? (
               <CachedImage
-                src={art_cover}
+                src={art_cover || fallBackImage}
                 className="justPlayedImg"
                 alt={title}
               />
@@ -419,7 +423,7 @@ const GameCard = ({
                 alt="cover"
               />
             )}
-            {logo && (
+            {(justPlayed || runner !== 'nile') && logo && (
               <CachedImage
                 alt="logo"
                 src={`${logo}?h=400&resize=1&w=300`}
@@ -464,7 +468,7 @@ const GameCard = ({
                   <FontAwesomeIcon size={'2x'} icon={faRepeat} />
                 </SvgButton>
               )}
-              {isInstalled && !isUninstalling && (
+              {showSettingsButton && (
                 <>
                   <SvgButton
                     title={`${t('submenu.settings')} (${title})`}

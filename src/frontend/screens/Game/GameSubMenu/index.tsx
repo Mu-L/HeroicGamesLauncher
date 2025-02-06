@@ -2,7 +2,7 @@ import './index.css'
 
 import React, { useContext, useEffect, useState } from 'react'
 
-import { GameStatus, Runner, WikiInfo } from 'common/types'
+import { GameInfo, GameStatus, Runner } from 'common/types'
 
 import { createNewWindow, repair } from 'frontend/helpers'
 import { useTranslation } from 'react-i18next'
@@ -12,17 +12,21 @@ import { NavLink } from 'react-router-dom'
 import { InstallModal } from 'frontend/screens/Library/components'
 import { CircularProgress } from '@mui/material'
 import UninstallModal from 'frontend/components/UI/UninstallModal'
+import GameContext from '../GameContext'
 
 interface Props {
   appName: string
   isInstalled: boolean
   title: string
   storeUrl: string
+  changelog?: string
   runner: Runner
   handleUpdate: () => void
+  handleChangeLog: () => void
   disableUpdate: boolean
   onShowRequirements?: () => void
-  onShowDlcs?: () => void
+  onShowModifyInstall?: () => void
+  gameInfo: GameInfo
 }
 
 export default function GamesSubmenu({
@@ -30,14 +34,23 @@ export default function GamesSubmenu({
   isInstalled,
   title,
   storeUrl,
+  changelog,
   runner,
   handleUpdate,
+  handleChangeLog,
   disableUpdate,
   onShowRequirements,
-  onShowDlcs
+  onShowModifyInstall,
+  gameInfo
 }: Props) {
-  const { refresh, platform, libraryStatus, showDialogModal } =
-    useContext(ContextProvider)
+  const {
+    refresh,
+    platform,
+    libraryStatus,
+    showDialogModal,
+    setIsSettingsModalOpen
+  } = useContext(ContextProvider)
+  const { is } = useContext(GameContext)
   const isWin = platform === 'win32'
   const isLinux = platform === 'linux'
 
@@ -54,6 +67,7 @@ export default function GamesSubmenu({
   )
   const { t } = useTranslation('gamepage')
   const isSideloaded = runner === 'sideload'
+  const isThirdPartyManaged = !!gameInfo.thirdPartyManagedApp
 
   async function onMoveInstallYesClick() {
     const { defaultInstallPath } = await window.api.requestAppSettings()
@@ -170,6 +184,11 @@ export default function GamesSubmenu({
   }
 
   useEffect(() => {
+    // Check for game shortcuts on Steam
+    window.api.isAddedToSteam(appName, runner).then((added) => {
+      setAddedToSteam(added)
+    })
+
     if (!isInstalled) {
       return
     }
@@ -177,11 +196,6 @@ export default function GamesSubmenu({
     // Check for game shortcuts on desktop and start menu
     window.api.shortcutsExists(appName, runner).then((added) => {
       setHasShortcuts(added)
-    })
-
-    // Check for game shortcuts on Steam
-    window.api.isAddedToSteam(appName, runner).then((added) => {
-      setAddedToSteam(added)
     })
 
     // only unix specific
@@ -201,21 +215,23 @@ export default function GamesSubmenu({
 
   useEffect(() => {
     // Get steam id and set direct proton db link
-    window.api
-      .getWikiGameInfo(title, appName, runner)
-      .then((info: WikiInfo) => {
-        const steamID = info?.pcgamingwiki?.steamID ?? info?.gamesdb?.steamID
-        if (steamID) {
-          setProtonDBurl(`https://www.protondb.com/app/${steamID}`)
-        }
-      })
+    window.api.getWikiGameInfo(title, appName, runner).then((info) => {
+      const steamID = info?.pcgamingwiki?.steamID ?? info?.gamesdb?.steamID
+      if (steamID) {
+        setProtonDBurl(`https://www.protondb.com/app/${steamID}`)
+      }
+    })
   }, [title, appName])
 
   const refreshCircle = () => {
     return <CircularProgress className="link button is-text is-link" />
   }
 
-  const showDlcsItem = onShowDlcs && runner === 'legendary' && isInstalled
+  const showModifyItem =
+    onShowModifyInstall &&
+    ['legendary', 'gog'].includes(runner) &&
+    isInstalled &&
+    !isThirdPartyManaged
 
   return (
     <>
@@ -247,25 +263,14 @@ export default function GamesSubmenu({
                   ? t('submenu.removeShortcut', 'Remove shortcuts')
                   : t('submenu.addShortcut', 'Add shortcut')}
               </button>
-              {steamRefresh ? (
-                refreshCircle()
-              ) : (
-                <button
-                  onClick={async () => handleAddToSteam()}
-                  className="link button is-text is-link"
-                >
-                  {addedToSteam
-                    ? t('submenu.removeFromSteam', 'Remove from Steam')
-                    : t('submenu.addToSteam', 'Add to Steam')}
-                </button>
-              )}
               <button
                 onClick={async () => setShowUninstallModal(true)}
                 className="link button is-text is-link"
+                disabled={is.playing}
               >
                 {t('button.uninstall', 'Uninstall')}
               </button>{' '}
-              {!isSideloaded && (
+              {!isSideloaded && !isThirdPartyManaged && (
                 <button
                   onClick={async () => handleUpdate()}
                   className="link button is-text is-link"
@@ -274,7 +279,7 @@ export default function GamesSubmenu({
                   {t('button.force_update', 'Force Update if Available')}
                 </button>
               )}{' '}
-              {!isSideloaded && (
+              {!isSideloaded && !isThirdPartyManaged && (
                 <button
                   onClick={async () => handleMoveInstall()}
                   className="link button is-text is-link"
@@ -282,7 +287,7 @@ export default function GamesSubmenu({
                   {t('submenu.move', 'Move Game')}
                 </button>
               )}{' '}
-              {!isSideloaded && (
+              {!isSideloaded && !isThirdPartyManaged && (
                 <button
                   onClick={async () => handleChangeInstall()}
                   className="link button is-text is-link"
@@ -290,7 +295,7 @@ export default function GamesSubmenu({
                   {t('submenu.change', 'Change Install Location')}
                 </button>
               )}{' '}
-              {!isSideloaded && (
+              {!isSideloaded && !isThirdPartyManaged && (
                 <button
                   onClick={async () => handleRepair(appName)}
                   className="link button is-text is-link"
@@ -314,6 +319,24 @@ export default function GamesSubmenu({
                 ))}
             </>
           )}
+          {steamRefresh ? (
+            refreshCircle()
+          ) : (
+            <button
+              onClick={async () => handleAddToSteam()}
+              className="link button is-text is-link"
+            >
+              {addedToSteam
+                ? t('submenu.removeFromSteam', 'Remove from Steam')
+                : t('submenu.addToSteam', 'Add to Steam')}
+            </button>
+          )}
+          <button
+            onClick={() => setIsSettingsModalOpen(true, 'category', gameInfo)}
+            className="link button is-text is-link"
+          >
+            {t('submenu.categories', 'Categories')}
+          </button>
           {!isSideloaded && storeUrl && (
             <NavLink
               className="link button is-text is-link"
@@ -322,6 +345,14 @@ export default function GamesSubmenu({
               {t('submenu.store')}
             </NavLink>
           )}
+          {!isSideloaded && !!changelog?.length && (
+            <button
+              onClick={() => handleChangeLog()}
+              className="link button is-text is-link"
+            >
+              {t('button.changelog', 'Show Changelog')}
+            </button>
+          )}{' '}
           {!isSideloaded && isLinux && (
             <button
               onClick={() => createNewWindow(protonDBurl)}
@@ -338,12 +369,12 @@ export default function GamesSubmenu({
               {t('game.requirements', 'Requirements')}
             </button>
           )}
-          {showDlcsItem && (
+          {showModifyItem && (
             <button
-              onClick={async () => onShowDlcs()}
+              onClick={async () => onShowModifyInstall()}
               className="link button is-text is-link"
             >
-              {t('game.dlcs', 'DLCs')}
+              {t('game.modify', 'Modify Installation')}
             </button>
           )}
         </div>
